@@ -45,6 +45,16 @@ func (m Model) updateMainKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "R":
 		return m, m.restartDaemonCmd()
+	case "u":
+		if m.tab != tabProfiles {
+			m.undoEdit()
+		}
+		return m, nil
+	case "ctrl+r":
+		if m.tab != tabProfiles {
+			m.redoEdit()
+		}
+		return m, nil
 	case "U":
 		m.disableUnknownOutputs = !m.disableUnknownOutputs
 		m.markDirty()

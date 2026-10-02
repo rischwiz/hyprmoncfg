@@ -12,6 +12,7 @@ import (
 )
 
 func (m *Model) loadLiveState() {
+	m.clearUndo()
 	prevOutputs := m.editOutputs
 	selectedKey := ""
 	if m.selectedOutput >= 0 && m.selectedOutput < len(prevOutputs) {
@@ -68,6 +69,7 @@ func (m *Model) loadLiveState() {
 }
 
 func (m *Model) loadProfile(p profile.Profile) {
+	m.clearUndo()
 	outputs := make([]editableOutput, 0, len(p.Outputs))
 	for _, saved := range p.Outputs {
 		live, ok := m.findLiveMonitor(saved)

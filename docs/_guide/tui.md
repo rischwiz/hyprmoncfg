@@ -62,9 +62,17 @@ VRR`. The saved profile is unchanged. See [Daemon Behavior](/daemon/#displays-th
 | `1` `2` `3` | Switch tabs (layout, workspaces, profiles) |
 | `a` | Preview the current draft or selected profile, then Keep or Revert |
 | `s` | Save current draft as a named profile |
+| `u` | Undo the last change to the draft |
+| `Ctrl+r` | Redo it |
 | `r` | Reset from live Hyprland state |
 | `?` | Show every key for the tab you are on |
 | `q` | Quit |
+
+Undo covers the draft on the Layout and Workspaces tabs: positions, display and
+color settings, the workspace plan, and the `U` policy. A drag is one step, and
+so is a quick run of the same key on the same display. It remembers up to 100
+steps and never touches the live layout or saved profiles. Resetting, loading a
+profile, or a change in the connected displays starts a fresh history.
 
 ### Canvas controls
 

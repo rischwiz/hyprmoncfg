@@ -317,6 +317,7 @@ type Model struct {
 	activeProfileName     string
 	draftExec             string
 	disableUnknownOutputs bool
+	history               undoHistory
 	daemonOK              bool
 	daemonVersion         string
 	profileOverride       string
@@ -386,7 +387,7 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(m.refreshCmd(false), tickCmd())
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
