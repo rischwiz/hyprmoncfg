@@ -58,6 +58,10 @@ type Engine struct {
 	// succeeds by lighting the panel, and the external may take a moment
 	// longer to come back.
 	TolerateModeless bool
+	// Extend holds the defaults for displays the profile does not know. A
+	// caller that already extended the profile can leave it zero: extending
+	// twice changes nothing.
+	Extend profile.ExtendOptions
 }
 
 type RevertState struct {
@@ -192,7 +196,7 @@ func SnapshotCommands(monitors []hypr.Monitor) []string {
 }
 
 func (e Engine) Apply(ctx context.Context, p profile.Profile, monitors []hypr.Monitor, modearg ...applyMode) (RevertState, error) {
-	p = profile.ExtendConnected(p, monitors)
+	p = profile.ExtendConnectedWith(p, monitors, e.Extend)
 	mode := ApplyModeNonInteractive
 	if len(modearg) > 0 {
 		mode = modearg[0]

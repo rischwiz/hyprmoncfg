@@ -17,7 +17,7 @@ func TestDirectModePreviewUsesTheSavedPreviewTime(t *testing.T) {
 		t.Fatalf("default preview time = %v, want 30s", got)
 	}
 
-	if _, err := prefs.Save(dir, prefs.Preferences{PreviewTimeoutSeconds: 60}); err != nil {
+	if _, err := prefs.Save(dir, withPreviewTime(60)); err != nil {
 		t.Fatal(err)
 	}
 	if got := m.previewTimeout(); got != 60*time.Second {
@@ -35,4 +35,11 @@ func TestDirectModePreviewUsesTheSavedPreviewTime(t *testing.T) {
 	if got := (Model{}).previewTimeout(); got != 30*time.Second {
 		t.Fatalf("preview time without a store = %v", got)
 	}
+}
+
+// withPreviewTime is the defaults with another preview time.
+func withPreviewTime(seconds int) prefs.Preferences {
+	p := prefs.Default()
+	p.PreviewTimeoutSeconds = seconds
+	return p
 }

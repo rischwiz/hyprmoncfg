@@ -914,7 +914,7 @@ func (s *Service) applyBestLocked(ctx context.Context) (resultErr error) {
 				target = fallback
 			} else {
 				s.cfg.Logf("no matching profile for monitor set %s", hash)
-				target = profile.ExtendConnected(profile.Profile{Name: "draft"}, monitors)
+				target = profile.ExtendConnectedWith(profile.Profile{Name: "draft"}, monitors, s.loadPreferences().ExtendOptions())
 			}
 		} else {
 			if s.lidState.Known() {
@@ -951,7 +951,7 @@ func (s *Service) applyBestLocked(ctx context.Context) (resultErr error) {
 		}
 	}
 
-	effective := profile.ExtendConnected(target, monitors)
+	effective := profile.ExtendConnectedWith(target, monitors, s.loadPreferences().ExtendOptions())
 	defer func() {
 		if resultErr == nil {
 			s.fallbacks.observeApplied()

@@ -50,9 +50,13 @@ Errors replace `result` with an object containing a stable `code`, a human-reada
 | `get_preferences` | none | Preferences |
 | `set_preferences` | full preferences object | Preferences as saved |
 
-Preferences are `{"version": 1, "preview_timeout_seconds": 30}`. The daemon
-validates them: `preview_timeout_seconds` must be 15, 30, 60, or 120.
-`set_preferences` replaces the whole object and broadcasts a status event. A
+Preferences hold `preview_timeout_seconds` (15, 30, 60, or 120),
+`new_display_side` (`right`, `left`, `above`, `below`), `new_display_alignment`
+(`center`, `edge`), `new_display_vrr` (0, 1, 2), and `notify_new_setup`; see
+[configuration files](configuration-files.md#preferences). The daemon validates
+them. `set_preferences` changes the keys it is given and leaves the others as
+they are, so a client that knows only some keys cannot reset the rest, then
+broadcasts a status event. A
 daemon that supports both methods lists `preferences` in the status document's
 `capabilities`; the field is absent on older daemons, which answer with an
 unknown-method error. The protocol version is unchanged.

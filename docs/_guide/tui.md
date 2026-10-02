@@ -62,6 +62,7 @@ VRR`. The saved profile is unchanged. See [Daemon Behavior](/daemon/#displays-th
 | `1` `2` `3` | Switch tabs (layout, workspaces, profiles) |
 | `a` | Preview the current draft or selected profile, then Keep or Revert |
 | `s` | Save current draft as a named profile |
+| `p` | Open preferences |
 | `r` | Reset from live Hyprland state |
 | `?` | Show every key for the tab you are on |
 | `q` | Quit |
@@ -109,6 +110,26 @@ Press `Enter` on any **Display** or **Color** field to edit it:
 The **Color** tab uses the same terminology as the Omarchy panel. **Color space / EOTF** combines the primaries and transfer function (for example, **BT.2020 + PQ (HDR)**). The picker shows descriptive labels but saves Hyprland's original values, such as `hdr`.
 
 **SDR luminance scale** and **SDR saturation scale** are unitless SDR-to-HDR multipliers, not physical brightness controls. An omitted or zero multiplier uses the neutral value `1`. Black, white, peak, and frame-average luminance are measured in **cd/m²**. Display luminance and WCG/HDR capability fields override display metadata; leave them at their defaults to use EDID. Narrow terminals shorten the labels without changing their meaning.
+
+## Preferences
+
+Press `p`, or click **Preferences** in the top rail when the window is wide
+enough to show it, to open a small dialog of settings that belong to you, not to
+a profile:
+
+- **Preview time**: 15, 30, 60, or 120 seconds to press Keep before a preview reverts
+- **New display side** and **New display alignment**: where a display no layout
+  knows yet is added, and whether it is centered on its neighbour or flush with
+  its edge
+- **New display VRR**: Off, On, or Fullscreen for such a display
+- **New setup notification**: whether you want a desktop notification when an
+  unfamiliar setup is extended
+
+`↑` `↓` select a row, `←` `→` change it and stop at the ends, and a click picks
+an option directly. `Enter` saves through the daemon when it is running;
+`Esc` discards. New display settings never change a saved profile or a display
+already in a layout. With an older daemon still running, the dialog asks you to
+restart it.
 
 ## Keep or Revert
 

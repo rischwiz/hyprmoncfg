@@ -450,3 +450,30 @@ func TestClientRefusesPreferencesOnAnOlderDaemon(t *testing.T) {
 		t.Fatalf("save on an older daemon: %v", err)
 	}
 }
+
+// A client that only knows some preference keys must not reset the others.
+func TestSetPreferencesChangesOnlyTheKeysItIsGiven(t *testing.T) {
+	current := prefs.Default()
+	current.NewDisplaySide = "left"
+	current.NotifyNewSetup = false
+	handler := &testHandler{preferences: current}
+	serverConn, clientConn := net.Pipe()
+	t.Cleanup(func() { _ = serverConn.Close(); _ = clientConn.Close() })
+	server := &Server{Handler: handler}
+	client := &serverClient{conn: serverConn, encoder: json.NewEncoder(serverConn)}
+
+	response := server.dispatch("test", client, Request{
+		Type: "request", ProtocolVersion: ProtocolVersion, ID: "1", Method: MethodSetPrefs,
+		Params: json.RawMessage(`{"preview_timeout_seconds": 120}`),
+	})
+	if response.Error != nil {
+		t.Fatalf("set_preferences: %+v", response.Error)
+	}
+
+	handler.mu.Lock()
+	got := handler.preferences
+	handler.mu.Unlock()
+	if got.PreviewTimeoutSeconds != 120 || got.NewDisplaySide != "left" || got.NotifyNewSetup {
+		t.Fatalf("preferences = %+v, want only the preview time changed", got)
+	}
+}

@@ -23,7 +23,7 @@ func TestPreviewUsesTheSavedPreviewTimeUnlessTheClientSendsOne(t *testing.T) {
 	if got := svc.previewTimeout(ipc.PreviewParams{}); got != 30*time.Second {
 		t.Fatalf("default preview time = %v, want 30s", got)
 	}
-	if _, err := svc.SetPreferences(prefs.Preferences{PreviewTimeoutSeconds: 120}); err != nil {
+	if _, err := svc.SetPreferences(withPreviewTime(120)); err != nil {
 		t.Fatalf("save preferences: %v", err)
 	}
 	if got := svc.previewTimeout(ipc.PreviewParams{}); got != 120*time.Second {
@@ -43,13 +43,13 @@ func TestSetPreferencesValidatesAndNotifies(t *testing.T) {
 	notified := 0
 	svc.notify = func() { notified++ }
 
-	if _, err := svc.SetPreferences(prefs.Preferences{PreviewTimeoutSeconds: 45}); err == nil {
+	if _, err := svc.SetPreferences(withPreviewTime(45)); err == nil {
 		t.Fatal("a preview time that is not offered was saved")
 	}
 	if _, err := os.Stat(prefs.Path(dir)); !os.IsNotExist(err) {
 		t.Fatal("a refused change wrote the preferences file")
 	}
-	saved, err := svc.SetPreferences(prefs.Preferences{PreviewTimeoutSeconds: 60})
+	saved, err := svc.SetPreferences(withPreviewTime(60))
 	if err != nil || saved.PreviewTimeoutSeconds != 60 || saved.Version != prefs.Version {
 		t.Fatalf("saved = %+v, %v", saved, err)
 	}
@@ -72,5 +72,29 @@ func TestADamagedPreferencesFileStillLeavesPreviewsADeadline(t *testing.T) {
 	}
 	if !logs.contains("using defaults") {
 		t.Fatalf("the problem was not logged: %q", logs.all())
+	}
+}
+
+// withPreviewTime is the defaults with another preview time.
+func withPreviewTime(seconds int) prefs.Preferences {
+	p := prefs.Default()
+	p.PreviewTimeoutSeconds = seconds
+	return p
+}
+
+func TestSavedNewDisplaySettingsReachAutomaticExtension(t *testing.T) {
+	svc, _, _ := preferencesTestService(t)
+	if got := svc.loadPreferences().ExtendOptions(); got.Side != profile.NewDisplayRight || got.VRR != 0 {
+		t.Fatalf("default extension options = %+v", got)
+	}
+
+	chosen := prefs.Default()
+	chosen.NewDisplaySide, chosen.NewDisplayAlignment, chosen.NewDisplayVRR = profile.NewDisplayLeft, profile.NewDisplayEdge, 1
+	if _, err := svc.SetPreferences(chosen); err != nil {
+		t.Fatal(err)
+	}
+	got := svc.loadPreferences().ExtendOptions()
+	if got.Side != profile.NewDisplayLeft || got.Alignment != profile.NewDisplayEdge || got.VRR != 1 {
+		t.Fatalf("extension options after saving = %+v", got)
 	}
 }

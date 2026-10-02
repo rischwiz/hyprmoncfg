@@ -45,6 +45,8 @@ func (m Model) updateMainKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "R":
 		return m, m.restartDaemonCmd()
+	case "p":
+		return m, m.openPreferencesCmd()
 	case "U":
 		m.disableUnknownOutputs = !m.disableUnknownOutputs
 		m.markDirty()

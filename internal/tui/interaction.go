@@ -207,6 +207,8 @@ func (m *Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case modePreferences:
+		return m.updatePreferencesMouse(msg)
 	case modeNumericInput, modeProfileExecInput, modeSaveConfirm:
 		return m, nil
 	}
@@ -230,6 +232,11 @@ func (m *Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		if start, ok := visibleTextColumn(plainTabs, "Daemon not running"); ok {
 			if localX >= start && localX < start+lipgloss.Width("Daemon not running") {
 				return m, m.openURLCmd("Daemon not running", daemonURL)
+			}
+		}
+		if start, ok := visibleTextColumn(plainTabs, preferencesLabel); ok {
+			if localX >= start && localX < start+lipgloss.Width(preferencesLabel) {
+				return m, m.openPreferencesCmd()
 			}
 		}
 	}

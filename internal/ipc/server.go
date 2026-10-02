@@ -245,9 +245,13 @@ func (s *Server) dispatch(owner string, client *serverClient, request Request) R
 	case MethodGetPrefs:
 		result, err = s.Handler.Preferences()
 	case MethodSetPrefs:
+		// Decode onto the current preferences, so a client that only knows
+		// some keys changes those and leaves the rest as they are.
 		var params prefs.Preferences
-		if err = decodeParams(request.Params, &params); err == nil {
-			result, err = s.Handler.SetPreferences(params)
+		if params, err = s.Handler.Preferences(); err == nil {
+			if err = decodeParams(request.Params, &params); err == nil {
+				result, err = s.Handler.SetPreferences(params)
+			}
 		}
 	default:
 		err = fmt.Errorf("unknown IPC method %q", request.Method)

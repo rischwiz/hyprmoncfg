@@ -279,9 +279,9 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 			if err != nil {
 				return err
 			}
+			saved, _ := prefs.Load(store.BaseDir())
 			if !cmd.Flags().Changed("confirm-timeout") {
 				// The flag wins when given; otherwise use the saved preference.
-				saved, _ := prefs.Load(store.BaseDir())
 				confirmTimeout = saved.PreviewTimeoutSeconds
 			}
 			session, err := openWriterSession(cmd.Context())
@@ -317,6 +317,7 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 				WakeConfig:         omarchywatch.NewWakeConfig(),
 				MonitorsConfPath:   *monitorsConf,
 				HyprlandConfigPath: *hyprConfig,
+				Extend:             saved.ExtendOptions(),
 				Logf: func(format string, args ...any) {
 					fmt.Printf(format, args...)
 				},
@@ -400,7 +401,9 @@ func newDeleteCmd(configDir *string) *cobra.Command {
 }
 
 func newPreferencesCmd(configDir *string) *cobra.Command {
-	var previewTimeout int
+	var previewTimeout, newDisplayVRR int
+	var newDisplaySide, newDisplayAlignment string
+	var notifyNewSetup bool
 	var jsonOutput bool
 
 	cmd := &cobra.Command{
@@ -431,8 +434,26 @@ func newPreferencesCmd(configDir *string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if cmd.Flags().Changed("preview-timeout") {
-				current.PreviewTimeoutSeconds = previewTimeout
+			changed := false
+			for _, name := range []string{"preview-timeout", "new-display-side", "new-display-alignment", "new-display-vrr", "notify-new-setup"} {
+				changed = changed || cmd.Flags().Changed(name)
+			}
+			if changed {
+				if cmd.Flags().Changed("preview-timeout") {
+					current.PreviewTimeoutSeconds = previewTimeout
+				}
+				if cmd.Flags().Changed("new-display-side") {
+					current.NewDisplaySide = profile.NewDisplaySide(newDisplaySide)
+				}
+				if cmd.Flags().Changed("new-display-alignment") {
+					current.NewDisplayAlignment = profile.NewDisplayAlignment(newDisplayAlignment)
+				}
+				if cmd.Flags().Changed("new-display-vrr") {
+					current.NewDisplayVRR = newDisplayVRR
+				}
+				if cmd.Flags().Changed("notify-new-setup") {
+					current.NotifyNewSetup = notifyNewSetup
+				}
 				if session.ipc != nil {
 					current, err = session.ipc.SetPreferences(ctx, current)
 				} else {
@@ -447,13 +468,30 @@ func newPreferencesCmd(configDir *string) *cobra.Command {
 				encoder.SetIndent("", "  ")
 				return encoder.Encode(current)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Preview time: %d seconds\n", current.PreviewTimeoutSeconds)
+			writePreferences(cmd.OutOrStdout(), current)
 			return nil
 		},
 	}
 	cmd.Flags().IntVar(&previewTimeout, "preview-timeout", prefs.DefaultPreviewTimeoutSeconds, "Seconds a preview waits for Keep before reverting: 15, 30, 60, or 120")
+	cmd.Flags().StringVar(&newDisplaySide, "new-display-side", string(profile.NewDisplayRight), "Where an unfamiliar display joins the layout: right, left, above, or below")
+	cmd.Flags().StringVar(&newDisplayAlignment, "new-display-alignment", string(profile.NewDisplayCenter), "How it lines up with its neighbour: center or edge")
+	cmd.Flags().IntVar(&newDisplayVRR, "new-display-vrr", 0, "VRR for an unfamiliar display: 0 off, 1 on, 2 fullscreen")
+	cmd.Flags().BoolVar(&notifyNewSetup, "notify-new-setup", true, "Send a desktop notification when an unfamiliar setup is extended")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Print the preferences as JSON")
 	return cmd
+}
+
+func writePreferences(out io.Writer, p prefs.Preferences) {
+	vrr := map[int]string{0: "off", 1: "on", 2: "fullscreen"}[p.NewDisplayVRR]
+	notify := "off"
+	if p.NotifyNewSetup {
+		notify = "on"
+	}
+	fmt.Fprintf(out, "Preview time: %d seconds\n", p.PreviewTimeoutSeconds)
+	fmt.Fprintf(out, "New display side: %s\n", p.NewDisplaySide)
+	fmt.Fprintf(out, "New display alignment: %s\n", p.NewDisplayAlignment)
+	fmt.Fprintf(out, "New display VRR: %s\n", vrr)
+	fmt.Fprintf(out, "Notify on new setup: %s\n", notify)
 }
 
 func newDoctorCmd(monitorsConf *string, hyprConfig *string) *cobra.Command {

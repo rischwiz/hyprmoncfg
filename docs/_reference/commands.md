@@ -25,6 +25,10 @@ Running `hyprmoncfg` with no arguments opens the TUI.
 | `hyprmoncfg doctor --fix` | Add or move that include to the end of the Hyprland config |
 | `hyprmoncfg preferences` | Show application preferences |
 | `hyprmoncfg preferences --preview-timeout <seconds>` | Set how long a preview waits for Keep: 15, 30, 60, or 120 |
+| `hyprmoncfg preferences --new-display-side <side>` | Where an unfamiliar display joins the layout: `right`, `left`, `above`, or `below` |
+| `hyprmoncfg preferences --new-display-alignment <alignment>` | How it lines up with its neighbour: `center` or `edge` |
+| `hyprmoncfg preferences --new-display-vrr <mode>` | VRR for an unfamiliar display: `0` off, `1` on, `2` fullscreen |
+| `hyprmoncfg preferences --notify-new-setup=<bool>` | Whether a desktop notification is wanted when an unfamiliar setup is extended |
 | `hyprmoncfg preferences --json` | Print the preferences as JSON |
 | `hyprmoncfg version` | Print build metadata |
 

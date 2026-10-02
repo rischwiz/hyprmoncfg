@@ -289,7 +289,11 @@ func (s *Service) Preview(owner string, params ipc.PreviewParams) (ipc.Transacti
 	if state, stateErr := lid.ReadState(ctx); stateErr == nil && state == lid.Closed {
 		effective, _ = profile.ApplyClosedLidPolicy(target, monitors)
 	}
-	snapshot, err := s.engine.Apply(ctx, effective, monitors, apply.ApplyModeInteractive)
+	// A previewed profile can omit a connected display; place it by the
+	// person's defaults, as automatic matching would.
+	engine := s.engine
+	engine.Extend = s.loadPreferences().ExtendOptions()
+	snapshot, err := engine.Apply(ctx, effective, monitors, apply.ApplyModeInteractive)
 	if err != nil {
 		return ipc.Transaction{}, applyQueryError(err)
 	}

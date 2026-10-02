@@ -29,6 +29,7 @@ const (
 	modeModePicker
 	modeNumericInput
 	modeProfileExecInput
+	modePreferences
 	modeKeybindings
 	modeDeleteConfirm
 )
@@ -301,6 +302,7 @@ type Model struct {
 	picker        *modePickerState
 	input         *numericInputState
 	execInput     *profileExecInputState
+	prefsDialog   *preferencesDialogState
 	drag          *canvasDragState
 	toast         *toastState
 	snap          *snapHintState
@@ -528,6 +530,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case preferencesLoadedMsg:
+		if msg.err != nil {
+			m.setStatusErr(msg.err.Error())
+			return m, nil
+		}
+		m.prefsDialog = &preferencesDialogState{prefs: msg.prefs}
+		m.mode = modePreferences
+		return m, nil
+
+	case preferencesSavedMsg:
+		if msg.err != nil {
+			// Keep the dialog and its choices so nothing has to be redone.
+			if m.prefsDialog != nil {
+				m.prefsDialog.err = msg.err
+				return m, nil
+			}
+			m.setStatusErr(msg.err.Error())
+			return m, nil
+		}
+		m.prefsDialog = nil
+		m.mode = modeMain
+		m.setStatusOK("Preferences saved")
+		return m, nil
+
 	case deleteMsg:
 		if msg.err != nil {
 			m.setStatusErr(msg.err.Error())
@@ -654,6 +680,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateNumericInputKeys(msg)
 		case modeProfileExecInput:
 			return m.updateProfileExecInputKeys(msg)
+		case modePreferences:
+			return m.updatePreferencesKeys(msg)
 		case modeKeybindings:
 			if msg.String() == "ctrl+c" {
 				return m, tea.Quit
@@ -720,6 +748,8 @@ func (m Model) View() string {
 		return m.renderModalScreen(m.renderNumericInput())
 	case modeProfileExecInput:
 		return m.renderModalScreen(m.renderProfileExecInput())
+	case modePreferences:
+		return m.renderModalScreen(m.renderPreferences())
 	case modeKeybindings:
 		return m.renderModalScreen(m.renderKeybindings())
 	default:
@@ -800,6 +830,12 @@ func (m Model) renderTabs() string {
 	}
 	if lipgloss.Width(status) > availableStatus {
 		status = ansi.Truncate(status, availableStatus, "")
+	}
+	// Preferences joins the rail after the tabs when the status leaves room,
+	// so pointer users can reach it. Narrow windows keep the key alone.
+	control := " " + preferencesLabel + " "
+	if lipgloss.Width(left)+lipgloss.Width(control)+1+lipgloss.Width(status)+2 <= width {
+		left += m.styles.tabInactive.Render(control) + lineStyle.Render("─")
 	}
 	statusStart := width - lipgloss.Width(status) - 1
 	gap := max(1, statusStart-lipgloss.Width(left))

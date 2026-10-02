@@ -221,11 +221,17 @@ func (m Model) saveProfileCmd(p profile.Profile) tea.Cmd {
 // previewTimeout is the saved confirmation time, or the default when there is
 // no store to read it from or the file cannot be used.
 func (m Model) previewTimeout() time.Duration {
+	return m.loadPreferences().PreviewTimeout()
+}
+
+// loadPreferences reads the saved preferences directly, for the editor
+// working without a daemon. No store, or an unusable file, gives the defaults.
+func (m Model) loadPreferences() prefs.Preferences {
 	if m.store == nil {
-		return apply.DefaultPreviewTimeout
+		return prefs.Default()
 	}
 	loaded, _ := prefs.Load(m.store.BaseDir())
-	return loaded.PreviewTimeout()
+	return loaded
 }
 
 func (m Model) deleteCmd(name string) tea.Cmd {
@@ -294,6 +300,7 @@ func (m Model) applyCmd(p profile.Profile, allowUnmanagedOverwrite ...bool) tea.
 
 	client := m.client
 	engine := m.engine
+	engine.Extend = m.loadPreferences().ExtendOptions()
 	guard := m.revertGuard
 	if guard != nil {
 		guard.begin()

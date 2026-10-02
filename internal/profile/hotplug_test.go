@@ -99,3 +99,80 @@ func TestExtendConnectedWithoutSurvivingDisplayStartsAtOrigin(t *testing.T) {
 		t.Fatalf("unexpected initial layout: %+v", got.Outputs)
 	}
 }
+
+func TestExtendConnectedWithPlacesNewDisplaysOnTheChosenSide(t *testing.T) {
+	// A 1920x1080 base at 100,200 and a 1280x720 newcomer.
+	base := hypr.Monitor{Name: "eDP-1", Make: "BOE", Model: "Panel", Width: 1920, Height: 1080, Scale: 1, X: 100, Y: 200}
+	added := hypr.Monitor{Name: "HDMI-A-1", Make: "Acme", Model: "Beam", Width: 1280, Height: 720, Scale: 1}
+	monitors := []hypr.Monitor{base, added}
+	saved := FromMonitors("laptop", monitors[:1])
+
+	for _, tc := range []struct {
+		name string
+		opts ExtendOptions
+		x, y int
+	}{
+		{"default is right and centered", ExtendOptions{}, 2020, 380},
+		{"right, edge", ExtendOptions{Side: NewDisplayRight, Alignment: NewDisplayEdge}, 2020, 200},
+		{"left, centered", ExtendOptions{Side: NewDisplayLeft}, -1180, 380},
+		{"left, edge", ExtendOptions{Side: NewDisplayLeft, Alignment: NewDisplayEdge}, -1180, 200},
+		{"above, centered", ExtendOptions{Side: NewDisplayAbove}, 420, -520},
+		{"below, centered", ExtendOptions{Side: NewDisplayBelow}, 420, 1280},
+		{"below, edge", ExtendOptions{Side: NewDisplayBelow, Alignment: NewDisplayEdge}, 100, 1280},
+	} {
+		got := ExtendConnectedWith(saved, monitors, tc.opts)
+		var placed OutputConfig
+		for _, output := range got.Outputs {
+			if output.Name == "HDMI-A-1" {
+				placed = output
+			}
+		}
+		if placed.X != tc.x || placed.Y != tc.y {
+			t.Errorf("%s: placed at %d,%d, want %d,%d", tc.name, placed.X, placed.Y, tc.x, tc.y)
+		}
+		if err := ValidateLayout(got.Outputs); err != nil {
+			t.Errorf("%s: %v", tc.name, err)
+		}
+		if again := ExtendConnectedWith(got, monitors, ExtendOptions{Side: NewDisplayAbove, VRR: 2}); !reflect.DeepEqual(got, again) {
+			t.Errorf("%s: extending an extended layout with other options changed it", tc.name)
+		}
+	}
+}
+
+func TestExtendConnectedWithAppliesTheVRRDefaultOnlyToNewDisplays(t *testing.T) {
+	base := hypr.Monitor{Name: "eDP-1", Make: "BOE", Model: "Panel", Width: 1920, Height: 1080, Scale: 1}
+	added := hypr.Monitor{Name: "DP-1", Make: "Acme", Model: "Fast", Width: 2560, Height: 1440, Scale: 1}
+	monitors := []hypr.Monitor{base, added}
+	saved := FromMonitors("laptop", monitors[:1])
+
+	got := ExtendConnectedWith(saved, monitors, ExtendOptions{VRR: 2})
+	for _, output := range got.Outputs {
+		want := 0
+		if output.Name == "DP-1" {
+			want = 2
+		}
+		if output.VRR != want {
+			t.Fatalf("%s VRR = %d, want %d", output.Name, output.VRR, want)
+		}
+	}
+}
+
+func TestExtendConnectedWithChainsSeveralNewDisplaysAwayFromTheLayout(t *testing.T) {
+	base := hypr.Monitor{Name: "eDP-1", Make: "BOE", Model: "Panel", Width: 1920, Height: 1080, Scale: 1}
+	one := hypr.Monitor{Name: "DP-1", Make: "Acme", Model: "One", Width: 1920, Height: 1080, Scale: 1}
+	two := hypr.Monitor{Name: "DP-2", Make: "Acme", Model: "Two", Width: 1920, Height: 1080, Scale: 1}
+	monitors := []hypr.Monitor{base, one, two}
+	saved := FromMonitors("laptop", monitors[:1])
+
+	got := ExtendConnectedWith(saved, monitors, ExtendOptions{Side: NewDisplayLeft})
+	positions := map[string]int{}
+	for _, output := range got.Outputs {
+		positions[output.Name] = output.X
+	}
+	if positions["DP-1"] != -1920 || positions["DP-2"] != -3840 {
+		t.Fatalf("positions = %v, want each new display further left", positions)
+	}
+	if err := ValidateLayout(got.Outputs); err != nil {
+		t.Fatal(err)
+	}
+}

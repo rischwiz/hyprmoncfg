@@ -7,9 +7,44 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/hypr"
 )
 
+// NewDisplaySide is where an unfamiliar display joins the existing layout.
+type NewDisplaySide string
+
+const (
+	NewDisplayRight NewDisplaySide = "right"
+	NewDisplayLeft  NewDisplaySide = "left"
+	NewDisplayAbove NewDisplaySide = "above"
+	NewDisplayBelow NewDisplaySide = "below"
+)
+
+// NewDisplayAlignment lines an unfamiliar display up with its neighbour:
+// centered on it, or flush with its top edge (beside it) or left edge (above
+// or below it).
+type NewDisplayAlignment string
+
+const (
+	NewDisplayCenter NewDisplayAlignment = "center"
+	NewDisplayEdge   NewDisplayAlignment = "edge"
+)
+
+// ExtendOptions are the defaults for displays a layout does not know. The
+// zero value is the built-in behavior: to the right, centered, VRR off.
+type ExtendOptions struct {
+	Side      NewDisplaySide
+	Alignment NewDisplayAlignment
+	VRR       int
+}
+
 // ExtendConnected adds displays absent from a saved profile to its right edge.
 // The returned layout is ephemeral; the saved profile is never modified.
 func ExtendConnected(p Profile, monitors []hypr.Monitor) Profile {
+	return ExtendConnectedWith(p, monitors, ExtendOptions{})
+}
+
+// ExtendConnectedWith is ExtendConnected with a person's defaults for new
+// displays. Only displays the layout omits are affected, so extending an
+// already extended layout changes nothing whatever the options.
+func ExtendConnectedWith(p Profile, monitors []hypr.Monitor, opts ExtendOptions) Profile {
 	if p.DisableUnknownOutputs {
 		return p
 	}
@@ -21,7 +56,22 @@ func ExtendConnected(p Profile, monitors []hypr.Monitor) Profile {
 		return p
 	}
 	resolver := NewMonitorResolver(monitors)
-	right, top, adjacentHeight, found := 0, 0, 0, false
+	// anchor is the display a new one is placed against: the outermost one on
+	// the chosen side, then each display just added.
+	var anchor struct{ x, y, w, h int }
+	found := false
+	beyond := func(x, y, w, h int) bool {
+		switch opts.Side {
+		case NewDisplayLeft:
+			return x < anchor.x
+		case NewDisplayAbove:
+			return y < anchor.y
+		case NewDisplayBelow:
+			return y+h > anchor.y+anchor.h
+		default:
+			return x+w > anchor.x+anchor.w
+		}
+	}
 	connected := make([]OutputConfig, 0, len(p.Outputs))
 	for _, out := range p.Outputs {
 		live, ok := resolver.ResolveOutput(out)
@@ -37,8 +87,8 @@ func ExtendConnected(p Profile, monitors []hypr.Monitor) Profile {
 			m.Width, m.Height = live.Width, live.Height
 		}
 		w, h := m.LogicalSize()
-		if !found || out.X+w > right {
-			right, top, adjacentHeight, found = out.X+w, out.Y, h, true
+		if !found || beyond(out.X, out.Y, w, h) {
+			anchor.x, anchor.y, anchor.w, anchor.h, found = out.X, out.Y, w, h, true
 		}
 	}
 	p.Outputs = connected
@@ -71,18 +121,33 @@ func ExtendConnected(p Profile, monitors []hypr.Monitor) Profile {
 			m.Scale = 1
 		}
 		m.Disabled, m.MirrorOf, m.Transform = false, "", 0
-		m.X, m.Y = right, top
 		w, h := m.LogicalSize()
+		m.X, m.Y = 0, 0
 		if found {
-			m.Y += int(math.Round(float64(adjacentHeight-h) / 2))
+			// Offset along the shared edge: centered, or flush with it.
+			along := func(anchorSize, size int) int {
+				if opts.Alignment == NewDisplayEdge {
+					return 0
+				}
+				return int(math.Round(float64(anchorSize-size) / 2))
+			}
+			switch opts.Side {
+			case NewDisplayLeft:
+				m.X, m.Y = anchor.x-w, anchor.y+along(anchor.h, h)
+			case NewDisplayAbove:
+				m.X, m.Y = anchor.x+along(anchor.w, w), anchor.y-h
+			case NewDisplayBelow:
+				m.X, m.Y = anchor.x+along(anchor.w, w), anchor.y+anchor.h
+			default:
+				m.X, m.Y = anchor.x+anchor.w, anchor.y+along(anchor.h, h)
+			}
 		}
 		out := FromMonitors("draft", []hypr.Monitor{m}).Outputs[0]
-		out.VRR, out.Bitdepth, out.CM = 0, 8, "srgb"
+		out.VRR, out.Bitdepth, out.CM = opts.VRR, 8, "srgb"
 		out.Key = hypr.MonitorOutputKey(m, counts)
 		p.Outputs = append(p.Outputs, out)
 		p.Workspaces.MonitorOrder = append(p.Workspaces.MonitorOrder, out.Key)
-		right += w
-		top, adjacentHeight, found = m.Y, h, true
+		anchor.x, anchor.y, anchor.w, anchor.h, found = m.X, m.Y, w, h, true
 	}
 	if !p.Workspaces.Enabled {
 		p.Workspaces.Enabled = true

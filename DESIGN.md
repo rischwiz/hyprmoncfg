@@ -453,8 +453,12 @@ Decision (preferences store): `internal/prefs` owns a versioned
 `get_preferences` and `set_preferences` and advertised by the `preferences`
 capability. The first shipped key is `preview_timeout_seconds` (15, 30, 60, 120;
 default 30). The daemon, the TUI without a daemon, and `hyprmoncfg apply` read
-it; an explicit client duration still wins. The remaining keys below are not
-shipped and their names are not final.
+it; an explicit client duration still wins. `new_display_side`,
+`new_display_alignment`, `new_display_vrr` and `notify_new_setup` follow, applied
+by `profile.ExtendConnectedWith` to unfamiliar displays only. The TUI edits them
+in a Preferences dialog reached with `p` or from the top rail; the panel has no
+control yet. Scale and mode policy keys below are not shipped and their names
+are not final.
 
 First preferences: new-display side (right/left/above/below), alignment (center or
 edge), recommended versus explicit scale policy, mode policy, VRR default,

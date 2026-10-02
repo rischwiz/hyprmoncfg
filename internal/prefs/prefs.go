@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/crmne/hyprmoncfg/internal/config"
+	"github.com/crmne/hyprmoncfg/internal/profile"
 )
 
 // Version is the schema this build writes. A file from a newer build keeps
@@ -32,10 +33,31 @@ type Preferences struct {
 	// PreviewTimeoutSeconds is the confirmation time used when a client does
 	// not ask for one. A client that sends its own duration still gets it.
 	PreviewTimeoutSeconds int `json:"preview_timeout_seconds"`
+	// NewDisplaySide, NewDisplayAlignment and NewDisplayVRR are the defaults
+	// for a display no layout knows yet. They never change a saved profile or
+	// a display a layout already places.
+	NewDisplaySide      profile.NewDisplaySide      `json:"new_display_side"`
+	NewDisplayAlignment profile.NewDisplayAlignment `json:"new_display_alignment"`
+	NewDisplayVRR       int                         `json:"new_display_vrr"`
+	// NotifyNewSetup asks for one desktop notification when an unfamiliar
+	// setup has been extended automatically.
+	NotifyNewSetup bool `json:"notify_new_setup"`
 }
 
 func Default() Preferences {
-	return Preferences{Version: Version, PreviewTimeoutSeconds: DefaultPreviewTimeoutSeconds}
+	return Preferences{
+		Version:               Version,
+		PreviewTimeoutSeconds: DefaultPreviewTimeoutSeconds,
+		NewDisplaySide:        profile.NewDisplayRight,
+		NewDisplayAlignment:   profile.NewDisplayCenter,
+		NewDisplayVRR:         0,
+		NotifyNewSetup:        true,
+	}
+}
+
+// ExtendOptions are these preferences as automatic extension uses them.
+func (p Preferences) ExtendOptions() profile.ExtendOptions {
+	return profile.ExtendOptions{Side: p.NewDisplaySide, Alignment: p.NewDisplayAlignment, VRR: p.NewDisplayVRR}
 }
 
 func (p Preferences) PreviewTimeout() time.Duration {
@@ -43,12 +65,27 @@ func (p Preferences) PreviewTimeout() time.Duration {
 }
 
 func (p Preferences) Validate() error {
+	previewOK := false
 	for _, choice := range PreviewTimeoutChoices {
-		if p.PreviewTimeoutSeconds == choice {
-			return nil
-		}
+		previewOK = previewOK || p.PreviewTimeoutSeconds == choice
 	}
-	return fmt.Errorf("preview time must be one of 15, 30, 60, or 120 seconds, not %d", p.PreviewTimeoutSeconds)
+	if !previewOK {
+		return fmt.Errorf("preview time must be one of 15, 30, 60, or 120 seconds, not %d", p.PreviewTimeoutSeconds)
+	}
+	switch p.NewDisplaySide {
+	case profile.NewDisplayRight, profile.NewDisplayLeft, profile.NewDisplayAbove, profile.NewDisplayBelow:
+	default:
+		return fmt.Errorf("new display side must be right, left, above, or below, not %q", p.NewDisplaySide)
+	}
+	switch p.NewDisplayAlignment {
+	case profile.NewDisplayCenter, profile.NewDisplayEdge:
+	default:
+		return fmt.Errorf("new display alignment must be center or edge, not %q", p.NewDisplayAlignment)
+	}
+	if p.NewDisplayVRR < 0 || p.NewDisplayVRR > 2 {
+		return fmt.Errorf("new display VRR must be 0 (off), 1 (on), or 2 (fullscreen), not %d", p.NewDisplayVRR)
+	}
+	return nil
 }
 
 // Path is where preferences are stored under the hyprmoncfg config directory.

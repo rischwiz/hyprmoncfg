@@ -36,7 +36,11 @@ defaults apply.
 ```json
 {
   "version": 1,
-  "preview_timeout_seconds": 30
+  "preview_timeout_seconds": 30,
+  "new_display_side": "right",
+  "new_display_alignment": "center",
+  "new_display_vrr": 0,
+  "notify_new_setup": true
 }
 ```
 
@@ -46,6 +50,20 @@ daemon, and `hyprmoncfg apply` all read it. Change it with
 `hyprmoncfg preferences --preview-timeout <seconds>`. A file that cannot be read,
 or holds another value, is ignored with a log message and the 30-second default
 is used, so a preview always has a deadline.
+
+The `new_display_*` keys are defaults for a display no layout knows yet:
+
+- `new_display_side`: `right`, `left`, `above`, or `below` the outermost display
+  on that side. Several new displays chain outward from the first.
+- `new_display_alignment`: `center` on the neighbour, or `edge` for flush with
+  its top edge (beside it) or its left edge (above or below it).
+- `new_display_vrr`: `0` off, `1` on, `2` fullscreen only.
+
+They never change a saved profile or a display a layout already places, and a
+profile that keeps other displays off (`disable_unknown_outputs`) still does.
+`notify_new_setup` records whether you want a desktop notification when an
+unfamiliar setup is extended; nothing sends one yet. Keys missing from an older
+file keep their defaults.
 
 ### What's in a profile
 
