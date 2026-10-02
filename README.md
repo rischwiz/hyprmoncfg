@@ -8,9 +8,10 @@
 <strong>Create multi-monitor layouts for Hyprland.</strong><br>
 Arrange visually. Save each setup. Switch automatically on hotplug and lid events.
 
-Version 1.19 aligns display summaries and profile-command wording
-with the Omarchy panel. See the [TUI guide](docs/_guide/tui.md) for hardware details
-and the [shared design](DESIGN.md) for accepted presentation conventions and scope.
+Version 1.22 draws the TUI layout as a stage and shares its placement rules
+with the Omarchy panel. See the [release notes](docs/releases/1.22.0.md), the
+[TUI guide](docs/_guide/tui.md), and the [shared design](DESIGN.md) for accepted
+presentation conventions and scope.
 
 [![GitHub Release](https://img.shields.io/github/v/release/crmne/hyprmoncfg)](https://github.com/crmne/hyprmoncfg/releases)
 [![AUR](https://img.shields.io/aur/version/hyprmoncfg)](https://aur.archlinux.org/packages/hyprmoncfg)
@@ -26,12 +27,6 @@ and the [shared design](DESIGN.md) for accepted presentation conventions and sco
 </a>
 
 </div>
-
-Version 1.19 adds independent failed-apply retries, per-output health,
-bounded display discovery, visible small-terminal footer actions, workspace
-persistence choices in both editors, and opt-in `hyprmoncfgd --power-aware-refresh`
-for internal laptop panels. See the [release notes](docs/releases/1.19.0.md) and
-daemon guide for highlights, limits, and defaults.
 
 ---
 

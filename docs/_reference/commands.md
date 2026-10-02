@@ -23,6 +23,8 @@ Running `hyprmoncfg` with no arguments opens the TUI.
 | `hyprmoncfg delete <name>` | Delete a saved profile |
 | `hyprmoncfg doctor` | Check that Hyprland loads hyprmoncfg's monitor config last |
 | `hyprmoncfg doctor --fix` | Add or move that include to the end of the Hyprland config |
+| `hyprmoncfg manage` | Put hyprmoncfg's include back in the Hyprland config and let automatic switching resume |
+| `hyprmoncfg unmanage` | Stop automatic switching and take hyprmoncfg's include out of the Hyprland config |
 | `hyprmoncfg version` | Print build metadata |
 
 ### Common flags
@@ -72,6 +74,7 @@ The daemon. Runs in the foreground by default.
 | `--wake-settle <duration>` | Quiet period after displays wake before reconciling monitor changes (default: 2s) |
 | `--poll-interval <duration>` | Polling frequency for monitor fallback checks (default: 5s) |
 | `--lid-poll-interval <duration>` | Polling frequency for lid-state fallback checks (default: 1s) |
+| `--power-aware-refresh` | Adapt internal-panel refresh to AC or battery power, keeping the resolution (default: off) |
 | `--quiet` | Suppress log output |
 
 ## Automatic reconciliation
