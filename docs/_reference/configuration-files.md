@@ -61,9 +61,9 @@ The `new_display_*` keys are defaults for a display no layout knows yet:
 
 They never change a saved profile or a display a layout already places, and a
 profile that keeps other displays off (`disable_unknown_outputs`) still does.
-`notify_new_setup` records whether you want a desktop notification when an
-unfamiliar setup is extended; nothing sends one yet. Keys missing from an older
-file keep their defaults.
+`notify_new_setup` turns the daemon's
+[new setup notification](/daemon/#new-setup-notification) on or off. Keys missing
+from an older file keep their defaults.
 
 ### What's in a profile
 

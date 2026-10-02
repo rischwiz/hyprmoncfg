@@ -127,6 +127,31 @@ changed. The daemon also can't see a display that stays connected but shows
 nothing, because Hyprland and the kernel report that the same as a working one.
 The gentle wake exists because the drop before that silence is visible.
 
+### New setup notification
+
+When the daemon has added a display no layout knew, and the new layout has
+been applied and checked, it sends one desktop notification:
+
+> Beam 4 connected
+> Added to the right of your layout. Your Laptop profile is unchanged.
+
+It says where the display went, following your new-display preferences, and
+whether a saved profile was involved. One unfamiliar setup produces one
+notification however often it is re-applied, and reconnecting it later
+announces it again. Restoring a known profile is quiet, and so is a daemon
+restart that finds the display already where the layout puts it.
+
+The notification goes to `org.freedesktop.Notifications` on the session bus,
+which is contacted only when there is something to announce. Any notification
+server works; without one the daemon logs that the message was not delivered
+and carries on. Extending the layout never waits for the notification.
+
+**Adjust and save…** opens the TUI through `xdg-terminal-exec`. The action is
+offered only when both `xdg-terminal-exec` and `hyprmoncfg` are on the daemon's
+`PATH`; otherwise the notification is sent without it. It does not open the
+Omarchy panel. Turn the notification off with
+`hyprmoncfg preferences --notify-new-setup=false` or in the TUI's Preferences.
+
 ## Profile matching
 
 Profiles are matched by hardware identity (make, model, serial) -- not connector name. This means your layout survives when monitors swap between `DP-1` and `DP-2` across reboots. Each profile is scored against the currently connected monitors:

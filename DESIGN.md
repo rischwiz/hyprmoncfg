@@ -223,6 +223,15 @@ fall back to the TUI. Starting either editor loads current state and focuses the
 new output; it must not erase an existing draft. A late click after unplugging
 shows current displays and explains that the setup changed.
 
+Decision (first delivery): the daemon sends the notification itself through
+`org.freedesktop.Notifications`, after the extended layout has been applied and
+verified, once per monitor set, gated by `notify_new_setup`. A daemon restart
+that finds the display already placed is quiet. The action opens the TUI through
+`xdg-terminal-exec` and is omitted when that is unavailable. Routing the action
+to the panel, a stable event ID for other coordinators, Do Not Disturb beyond
+what the notification server does, and focusing the new output in the editor
+are not implemented.
+
 No UI process must stay open for extension or recovery to work. The compact view
 also offers `Adjust and save…`, so dismissing a notification loses no capability.
 

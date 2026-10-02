@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/hypr"
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
+	"github.com/crmne/hyprmoncfg/internal/notify"
 	"github.com/crmne/hyprmoncfg/internal/omarchywatch"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 	"github.com/crmne/hyprmoncfg/internal/writerlock"
@@ -89,7 +91,14 @@ func newRootCmd() *cobra.Command {
 				ReleaseWatcher:    watcherOwner.Release,
 				LaptopToggle:      omarchywatch.NewLaptopToggle(),
 				WakeConfig:        omarchywatch.NewWakeConfig(),
-				Logf:              logf,
+				// The session bus is only contacted when there is something
+				// to announce. The action is offered only if a terminal
+				// helper and the editor are both on PATH.
+				Notifier: &notify.DBus{
+					OnAction: notify.TUILauncher(exec.LookPath, notify.StartDetached),
+					Logf:     logf,
+				},
+				Logf: logf,
 			})
 			socketPath, err := ipc.SocketPath()
 			if err != nil {

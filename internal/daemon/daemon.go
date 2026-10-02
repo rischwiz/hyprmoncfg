@@ -15,6 +15,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/hypr"
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
+	"github.com/crmne/hyprmoncfg/internal/notify"
 	"github.com/crmne/hyprmoncfg/internal/omarchywatch"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 	"github.com/crmne/hyprmoncfg/internal/profileio"
@@ -44,7 +45,11 @@ type Config struct {
 	ReleaseWatcher func(context.Context) error
 	LaptopToggle   *omarchywatch.LaptopToggle
 	WakeConfig     *omarchywatch.WakeConfig
-	Logf           func(format string, args ...any)
+	// Notifier announces an unfamiliar setup once it has been extended. Nil
+	// sends nothing. NotifyInline delivers on the calling goroutine, for tests.
+	Notifier     notify.Notifier
+	NotifyInline bool
+	Logf         func(format string, args ...any)
 }
 
 type Service struct {
@@ -68,8 +73,11 @@ type Service struct {
 	luaDialect atomic.Bool
 	// wakeRequested is set right after resume or opening the lid, while
 	// displays that still report DPMS off count as a failed wake.
-	wakeRequested  atomic.Bool
-	lastSeenHash   string
+	wakeRequested atomic.Bool
+	lastSeenHash  string
+	// notifiedSet is the monitor set last announced, so one unfamiliar setup
+	// produces one notification however often it is re-applied.
+	notifiedSet    string
 	lastProfile    profile.Profile
 	lastMonitorSet string
 	lastLidState   lid.State
@@ -1035,6 +1043,7 @@ func (s *Service) applyBestLocked(ctx context.Context) (resultErr error) {
 
 	s.lastSeenHash = appliedHash
 	s.cfg.Logf("applied profile: %s", target.Name)
+	s.announceNewSetup(target, effective, monitors, monitorSet)
 	s.signalChange()
 	return nil
 }

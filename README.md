@@ -59,7 +59,7 @@ both themes, workspace planning, and profiles.
 - **One-writer IPC** -- when the daemon is running, the TUI, CLI, and desktop panels send changes through it instead of racing over config files
 - **Include-chain verification** -- refuse to write generated monitor config that Hyprland is not reading
 - **Hyprland 0.55 Lua config support** -- write Lua automatically when `hyprland.lua` is active, while preserving legacy `.conf` setups
-- **One hard runtime dependency** -- Hyprland; UPower is optional for immediate lid events
+- **One hard runtime dependency** -- Hyprland; UPower is optional for immediate lid events, and a notification server for the new-display notification
 
 ## Install
 
