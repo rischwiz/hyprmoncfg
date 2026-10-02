@@ -29,6 +29,7 @@ const (
 	modeModePicker
 	modeNumericInput
 	modeProfileExecInput
+	modeProfileNameInput
 	modeKeybindings
 	modeDeleteConfirm
 )
@@ -301,11 +302,15 @@ type Model struct {
 	picker        *modePickerState
 	input         *numericInputState
 	execInput     *profileExecInputState
-	drag          *canvasDragState
-	toast         *toastState
-	snap          *snapHintState
-	snapSeq       int
-	toastSeq      int
+	nameInput     *profileNameInputState
+	// selectProfileAfterRefresh names the profile to highlight once the list
+	// has been reloaded, so a renamed or duplicated profile stays selected.
+	selectProfileAfterRefresh string
+	drag                      *canvasDragState
+	toast                     *toastState
+	snap                      *snapHintState
+	snapSeq                   int
+	toastSeq                  int
 
 	resetRequested        bool
 	status                string
@@ -404,6 +409,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.execInput != nil {
 			m.execInput.Input.Width = clampInt(m.modalMaxWidth()-16, 24, 72)
 		}
+		if m.nameInput != nil {
+			m.nameInput.Input.Width = clampInt(m.modalMaxWidth()-16, 24, 48)
+		}
 		return m, nil
 
 	case refreshMsg:
@@ -444,6 +452,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.setStatusOK("Monitor configuration changed. Reloaded live state.")
 				m.syncSelections()
 				return m, nil
+			}
+		}
+		// Reloading live state reselects the matched profile; a profile that
+		// was just renamed or duplicated takes the highlight back.
+		if name := m.selectProfileAfterRefresh; name != "" {
+			m.selectProfileAfterRefresh = ""
+			if idx := m.profileIndexByName(name); idx >= 0 {
+				m.selectedProfile = idx
 			}
 		}
 		m.syncSelections()
@@ -527,6 +543,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.toast = nil
 		}
 		return m, nil
+
+	case profileNameMsg:
+		m.applyProfileNameResult(msg)
+		if msg.err != nil {
+			return m, nil
+		}
+		return m, m.refreshCmd(false)
 
 	case deleteMsg:
 		if msg.err != nil {
@@ -652,6 +675,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateNumericInputKeys(msg)
 		case modeProfileExecInput:
 			return m.updateProfileExecInputKeys(msg)
+		case modeProfileNameInput:
+			return m.updateProfileNameInputKeys(msg)
 		case modeKeybindings:
 			if msg.String() == "ctrl+c" {
 				return m, tea.Quit
@@ -686,6 +711,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.execInput.Input, cmd = m.execInput.Input.Update(msg)
 			return m, cmd
 		}
+	case modeProfileNameInput:
+		if m.nameInput != nil {
+			var cmd tea.Cmd
+			m.nameInput.Input, cmd = m.nameInput.Input.Update(msg)
+			return m, cmd
+		}
 	}
 
 	return m, nil
@@ -718,6 +749,8 @@ func (m Model) View() string {
 		return m.renderModalScreen(m.renderNumericInput())
 	case modeProfileExecInput:
 		return m.renderModalScreen(m.renderProfileExecInput())
+	case modeProfileNameInput:
+		return m.renderModalScreen(m.renderProfileNameInput())
 	case modeKeybindings:
 		return m.renderModalScreen(m.renderKeybindings())
 	default:

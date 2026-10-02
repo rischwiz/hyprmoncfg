@@ -231,6 +231,16 @@ func (s *Server) dispatch(owner string, client *serverClient, request Request) R
 		if err = decodeParams(request.Params, &params); err == nil {
 			err = s.Handler.Delete(params)
 		}
+	case MethodRename:
+		var params RenameParams
+		if err = decodeParams(request.Params, &params); err == nil {
+			err = s.Handler.Rename(params)
+		}
+	case MethodDuplicate:
+		var params DuplicateParams
+		if err = decodeParams(request.Params, &params); err == nil {
+			err = s.Handler.Duplicate(params)
+		}
 	case MethodManage:
 		err = s.Handler.Manage()
 	case MethodUnmanage:

@@ -46,7 +46,21 @@ Errors replace `result` with an object containing a stable `code`, a human-reada
 | `revert` | `transaction_id` | none |
 | `save` | full `profile` | none |
 | `delete` | `name` | none |
+| `rename_profile` | `name`, `new_name` | none |
+| `duplicate_profile` | `name`, `new_name`; optional `copy_exec` boolean | none |
 | `set_profile_auto` | `enabled` boolean | none |
+
+`rename_profile` and `duplicate_profile` change saved profiles only: nothing is
+applied and no post-apply command runs. Both fail when `new_name` is taken,
+including by a name stored in the same file. `rename_profile` also fails while
+that profile is being previewed, and for a profile file that is a symlink.
+`duplicate_profile` drops the post-apply command unless `copy_exec` is true.
+
+The status document lists the operations a daemon supports beyond the first
+protocol release in `capabilities`, currently `rename_profile` and
+`duplicate_profile`. The field is absent on older daemons, which answer these
+methods with an unknown-method error; check it before offering the action. The
+protocol version is unchanged.
 
 A transaction contains an opaque `id`, the effective profile, and an RFC 3339 `deadline`.
 

@@ -416,6 +416,48 @@ func (s *Service) Delete(params ipc.DeleteParams) error {
 	return nil
 }
 
+// Rename and Duplicate change saved profiles only. The live layout stays as it
+// is and no post-apply command runs.
+func (s *Service) Rename(params ipc.RenameParams) error {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	if s.previewingProfile(params.Name) {
+		return fmt.Errorf("profile %q is being previewed; keep or revert it first", strings.TrimSpace(params.Name))
+	}
+	if err := profileio.Rename(s.store, params.Name, params.NewName); err != nil {
+		return err
+	}
+	oldName, newName := strings.TrimSpace(params.Name), strings.TrimSpace(params.NewName)
+	// A manual choice and the last applied profile are remembered by name;
+	// keep both pointing at the profile under its new name.
+	s.manualMu.Lock()
+	if s.manualProfile.Name == oldName {
+		s.manualProfile.Name = newName
+	}
+	s.manualMu.Unlock()
+	if s.lastProfile.Name == oldName {
+		s.lastProfile.Name = newName
+	}
+	s.signalChange()
+	return nil
+}
+
+func (s *Service) Duplicate(params ipc.DuplicateParams) error {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	if err := profileio.Duplicate(s.store, params.Name, params.NewName, params.CopyExec); err != nil {
+		return err
+	}
+	s.signalChange()
+	return nil
+}
+
+func (s *Service) previewingProfile(name string) bool {
+	s.pendingMu.Lock()
+	defer s.pendingMu.Unlock()
+	return s.pending != nil && s.pending.profile.Name == strings.TrimSpace(name)
+}
+
 func (s *Service) Disconnect(owner string) {
 	s.pendingMu.Lock()
 	pending := s.pending

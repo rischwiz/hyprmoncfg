@@ -107,6 +107,12 @@ func (s *Store) Delete(name string) error {
 	return nil
 }
 
+// SameFile reports whether two names are stored in the same file. Names that
+// differ only in case or punctuation share one.
+func (s *Store) SameFile(a, b string) bool {
+	return s.PathsForName(a).JSON == s.PathsForName(b).JSON
+}
+
 func (s *Store) PathsForName(name string) FilePaths {
 	slug := slugify(name)
 	if slug == "" {

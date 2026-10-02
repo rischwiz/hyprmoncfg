@@ -28,7 +28,7 @@ func (m Model) renderProfilesView(height int) string {
 }
 
 func (m Model) compactProfileListHeight(height int) int {
-	return clampInt(len(m.profiles)+profileListHeaderRows+profileListActionRows+2, 7, max(7, height/3))
+	return clampInt(len(m.profiles)+profileListHeaderRows+m.profileListActionRows()+2, 7, max(7, height/3))
 }
 
 func (m Model) renderProfileListPane(summaries []profileMatchSummary, width, height int) string {
@@ -37,12 +37,17 @@ func (m Model) renderProfileListPane(summaries []profileMatchSummary, width, hei
 	innerHeight := max(1, height-style.GetVerticalFrameSize())
 	cols := m.profileListColumns(innerWidth)
 	rows := m.profileListRows(summaries, cols)
-	actions := m.styles.value.Render(fitString("[Preview] [Edit] [Delete]", innerWidth))
+	actionRows := m.profileListActionRows()
+	actions := m.styles.value.Render(fitString(profileActionsPrimary+" "+profileActionsSecondary, innerWidth))
+	if actionRows == 2 {
+		actions = m.styles.value.Render(fitString(profileActionsPrimary, innerWidth)) + "\n" +
+			m.styles.value.Render(fitString(profileActionsSecondary, innerWidth))
+	}
 	if len(m.profiles) == 0 {
-		actions = ""
+		actions = strings.Repeat("\n", actionRows-1)
 	}
 	lines := append([]string{m.profileListHeader(cols), ""}, rows[min(m.profileListScroll(innerHeight), len(rows)-1):]...)
-	body := fitBlock(strings.Join(lines, "\n"), innerWidth, max(1, innerHeight-profileListActionRows)) + "\n" + actions
+	body := fitBlock(strings.Join(lines, "\n"), innerWidth, max(1, innerHeight-actionRows)) + "\n" + actions
 	return m.renderTitledPane(paneToneFocused, "Saved Profiles", body, width)
 }
 

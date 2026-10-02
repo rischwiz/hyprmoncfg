@@ -35,6 +35,8 @@ const (
 	MethodRevert      = "revert"
 	MethodSave        = "save"
 	MethodDelete      = "delete"
+	MethodRename      = "rename_profile"
+	MethodDuplicate   = "duplicate_profile"
 	MethodManage      = "manage"
 	MethodUnmanage    = "unmanage"
 	MethodProfileAuto = "set_profile_auto"
@@ -108,6 +110,19 @@ type DeleteParams struct {
 	Name string `json:"name"`
 }
 
+type RenameParams struct {
+	Name    string `json:"name"`
+	NewName string `json:"new_name"`
+}
+
+type DuplicateParams struct {
+	Name    string `json:"name"`
+	NewName string `json:"new_name"`
+	// CopyExec carries the post-apply command over to the copy. It is off by
+	// default: a command written for one setup can be wrong for another.
+	CopyExec bool `json:"copy_exec,omitempty"`
+}
+
 type ProfileAutoParams struct {
 	Enabled bool `json:"enabled"`
 }
@@ -128,6 +143,9 @@ type Handler interface {
 	Revert(owner string, params TransactionParams) error
 	Save(params SaveParams) error
 	Delete(params DeleteParams) error
+	// Rename and Duplicate never apply a layout or run a post-apply command.
+	Rename(params RenameParams) error
+	Duplicate(params DuplicateParams) error
 	// Manage and Unmanage move monitor configuration between hyprmoncfg and
 	// Hyprland's own config. Unmanage has to stop the daemon applying as well as
 	// take the include out, or the next monitor event puts it straight back.

@@ -202,8 +202,29 @@ const (
 	profileAutomaticPaneHeight = 3
 	// Table header and spacer; actions remain pinned below the scrolling rows.
 	profileListHeaderRows = 2
-	profileListActionRows = 1
 )
+
+// The list's actions sit on one row where the pane is wide enough, as in the
+// stacked layout, and on two in the narrow side column, so none is cut off.
+const (
+	profileActionsPrimary   = "[Preview] [Edit] [Delete]"
+	profileActionsSecondary = "[Rename] [Duplicate]"
+)
+
+func (m Model) profileListInnerWidth() int {
+	width := m.terminalWidth() - m.styles.app.GetHorizontalFrameSize()
+	if m.terminalWidth() >= 96 {
+		width, _ = m.sidePaneWidths(35)
+	}
+	return max(1, width-m.paneStyle(paneToneFocused).GetHorizontalFrameSize())
+}
+
+func (m Model) profileListActionRows() int {
+	if m.profileListInnerWidth() >= lipgloss.Width(profileActionsPrimary+" "+profileActionsSecondary) {
+		return 1
+	}
+	return 2
+}
 
 // profileListColumns is the shared column geometry of that table, so the
 // header, the rows, and mouse hit-testing cannot drift apart.
@@ -316,7 +337,7 @@ func (m Model) profileListRows(summaries []profileMatchSummary, cols profileList
 // profileListScroll keeps the selected profile visible once the list is longer
 // than the pane.
 func (m Model) profileListScroll(innerHeight int) int {
-	return inspectorScrollOffset(max(1, len(m.profiles)), m.selectedProfile, max(1, innerHeight-profileListHeaderRows-profileListActionRows))
+	return inspectorScrollOffset(max(1, len(m.profiles)), m.selectedProfile, max(1, innerHeight-profileListHeaderRows-m.profileListActionRows()))
 }
 
 // profileMatchVerdict is the headline answer to "does this profile fit the

@@ -186,6 +186,18 @@ func (m Model) updateProfileKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, m.openProfileExecInput()
+	case "n":
+		if len(m.profiles) == 0 {
+			m.setStatusErr("No profiles to rename")
+			return m, nil
+		}
+		return m, m.openProfileNameInput(false)
+	case "c":
+		if len(m.profiles) == 0 {
+			m.setStatusErr("No profiles to duplicate")
+			return m, nil
+		}
+		return m, m.openProfileNameInput(true)
 	case "d":
 		if len(m.profiles) == 0 {
 			m.setStatusErr("No profiles to delete")

@@ -62,6 +62,8 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newSaveCmd(&configDir))
 	root.AddCommand(newApplyCmd(&configDir, &monitorsConf, &hyprConfig))
 	root.AddCommand(newDeleteCmd(&configDir))
+	root.AddCommand(newRenameCmd(&configDir))
+	root.AddCommand(newDuplicateCmd(&configDir))
 	root.AddCommand(newDoctorCmd(&monitorsConf, &hyprConfig))
 	root.AddCommand(newManageCmd(&configDir, &monitorsConf, &hyprConfig))
 	root.AddCommand(newUnmanageCmd(&configDir, &monitorsConf, &hyprConfig))
@@ -390,6 +392,74 @@ func newDeleteCmd(configDir *string) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func newRenameCmd(configDir *string) *cobra.Command {
+	return &cobra.Command{
+		Use:   "rename <name> <new-name>",
+		Short: "Rename a saved profile",
+		Long:  "Give a saved profile a new name. Nothing is applied and its post-apply command does not run.",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, store, err := bootstrap(*configDir)
+			if err != nil {
+				return err
+			}
+			session, err := openWriterSession(cmd.Context())
+			if err != nil {
+				return err
+			}
+			defer session.Close()
+			if session.ipc != nil {
+				ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
+				defer cancel()
+				if err := session.ipc.Rename(ctx, args[0], args[1]); err != nil {
+					return err
+				}
+			} else if err := profileio.Rename(store, args[0], args[1]); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Renamed profile %q to %q\n", args[0], args[1])
+			return nil
+		},
+	}
+}
+
+func newDuplicateCmd(configDir *string) *cobra.Command {
+	var copyCommand bool
+
+	cmd := &cobra.Command{
+		Use:   "duplicate <name> <new-name>",
+		Short: "Save a copy of a profile under a new name",
+		Long: "Save a copy of a profile under a new name. Nothing is applied. The copy " +
+			"starts without a post-apply command unless --copy-command is given.",
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, store, err := bootstrap(*configDir)
+			if err != nil {
+				return err
+			}
+			session, err := openWriterSession(cmd.Context())
+			if err != nil {
+				return err
+			}
+			defer session.Close()
+			if session.ipc != nil {
+				ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
+				defer cancel()
+				params := ipc.DuplicateParams{Name: args[0], NewName: args[1], CopyExec: copyCommand}
+				if err := session.ipc.Duplicate(ctx, params); err != nil {
+					return err
+				}
+			} else if err := profileio.Duplicate(store, args[0], args[1], copyCommand); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Duplicated profile %q as %q\n", args[0], args[1])
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&copyCommand, "copy-command", false, "Copy the post-apply command to the new profile")
+	return cmd
 }
 
 func newDoctorCmd(monitorsConf *string, hyprConfig *string) *cobra.Command {

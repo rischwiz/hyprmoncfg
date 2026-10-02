@@ -128,6 +128,35 @@ func (c *Client) Delete(ctx context.Context, name string) error {
 	return c.call(ctx, MethodDelete, DeleteParams{Name: name}, nil)
 }
 
+// Rename gives a saved profile a new name. Nothing is applied.
+func (c *Client) Rename(ctx context.Context, name string, newName string) error {
+	if err := c.requireCapability(ctx, appstatus.CapabilityRenameProfile, "renaming a profile"); err != nil {
+		return err
+	}
+	return c.call(ctx, MethodRename, RenameParams{Name: name, NewName: newName}, nil)
+}
+
+// Duplicate saves a copy of a profile under a new name. Nothing is applied.
+func (c *Client) Duplicate(ctx context.Context, params DuplicateParams) error {
+	if err := c.requireCapability(ctx, appstatus.CapabilityDuplicateProfile, "duplicating a profile"); err != nil {
+		return err
+	}
+	return c.call(ctx, MethodDuplicate, params, nil)
+}
+
+// requireCapability turns an older daemon's "unknown IPC method" into advice.
+// The daemon keeps running its old binary until the service is restarted.
+func (c *Client) requireCapability(ctx context.Context, capability string, action string) error {
+	document, err := c.Status(ctx)
+	if err != nil {
+		return err
+	}
+	if document.HasCapability(capability) {
+		return nil
+	}
+	return fmt.Errorf("%s requires a newer daemon; restart the updated hyprmoncfgd", action)
+}
+
 // Manage hands monitor configuration to hyprmoncfg: the include goes back into
 // the Hyprland config and the daemon resumes applying profiles.
 func (c *Client) Manage(ctx context.Context) error {

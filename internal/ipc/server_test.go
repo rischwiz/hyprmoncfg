@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -24,6 +25,8 @@ type testHandler struct {
 	managed      bool
 	profileAuto  bool
 	disconnected []string
+	renamed      []RenameParams
+	duplicated   []DuplicateParams
 	editor       appstatus.EditorDocument
 	edited       appstatus.EditorDraft
 }
@@ -43,6 +46,20 @@ func (h *testHandler) Commit(_ string, _ CommitParams) error       { return nil 
 func (h *testHandler) Revert(_ string, _ TransactionParams) error  { return h.revertErr }
 func (h *testHandler) Save(_ SaveParams) error                     { return nil }
 func (h *testHandler) Delete(_ DeleteParams) error                 { return nil }
+
+func (h *testHandler) Rename(params RenameParams) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.renamed = append(h.renamed, params)
+	return nil
+}
+
+func (h *testHandler) Duplicate(params DuplicateParams) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.duplicated = append(h.duplicated, params)
+	return nil
+}
 
 func (h *testHandler) Manage() error {
 	h.mu.Lock()
@@ -377,5 +394,65 @@ func TestDispatchRoutesProfileAutomaticMode(t *testing.T) {
 	handler.mu.Unlock()
 	if !got {
 		t.Fatal("profile automatic mode was not routed to the handler")
+	}
+}
+
+func TestClientRenameAndDuplicateReachTheHandler(t *testing.T) {
+	handler := &testHandler{document: appstatus.Document{
+		Daemon:       appstatus.Daemon{Running: true},
+		Capabilities: []string{appstatus.CapabilityRenameProfile, appstatus.CapabilityDuplicateProfile},
+	}}
+	_, path, _ := runTestServer(t, handler)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	client, err := Dial(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	if err := client.Rename(ctx, "desk", "office"); err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+	if err := client.Duplicate(ctx, DuplicateParams{Name: "office", NewName: "office copy", CopyExec: true}); err != nil {
+		t.Fatalf("duplicate: %v", err)
+	}
+
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+	if len(handler.renamed) != 1 || handler.renamed[0] != (RenameParams{Name: "desk", NewName: "office"}) {
+		t.Fatalf("renamed = %+v", handler.renamed)
+	}
+	want := DuplicateParams{Name: "office", NewName: "office copy", CopyExec: true}
+	if len(handler.duplicated) != 1 || handler.duplicated[0] != want {
+		t.Fatalf("duplicated = %+v", handler.duplicated)
+	}
+}
+
+func TestClientRefusesRenameAndDuplicateOnAnOlderDaemon(t *testing.T) {
+	// A daemon from before these operations reports no capabilities.
+	handler := &testHandler{document: appstatus.Document{Daemon: appstatus.Daemon{Running: true}}}
+	_, path, _ := runTestServer(t, handler)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	client, err := Dial(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	for name, call := range map[string]func() error{
+		"rename":    func() error { return client.Rename(ctx, "desk", "office") },
+		"duplicate": func() error { return client.Duplicate(ctx, DuplicateParams{Name: "desk", NewName: "office"}) },
+	} {
+		err := call()
+		if err == nil || !strings.Contains(err.Error(), "requires a newer daemon") {
+			t.Fatalf("%s on an older daemon: %v", name, err)
+		}
+	}
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+	if len(handler.renamed)+len(handler.duplicated) != 0 {
+		t.Fatal("an unsupported operation still reached the handler")
 	}
 }

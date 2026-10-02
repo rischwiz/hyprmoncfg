@@ -207,7 +207,7 @@ func (m *Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
-	case modeNumericInput, modeProfileExecInput, modeSaveConfirm:
+	case modeNumericInput, modeProfileExecInput, modeProfileNameInput, modeSaveConfirm:
 		return m, nil
 	}
 
@@ -428,7 +428,7 @@ func (m Model) updateProfilesMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if automaticRect.inner(m.styles.inactivePane).contains(msg.X, msg.Y) {
 		return m.toggleProfileAutomatic()
 	}
-	for _, action := range []struct{ label, key string }{{"[Preview]", "enter"}, {"[Edit]", "l"}, {"[Delete]", "d"}} {
+	for _, action := range []struct{ label, key string }{{"[Preview]", "enter"}, {"[Edit]", "l"}, {"[Delete]", "d"}, {"[Rename]", "n"}, {"[Duplicate]", "c"}} {
 		if len(m.profiles) > 0 && m.visibleActionAt(msg.X, msg.Y, action.label) {
 			if action.key == "enter" {
 				return m.updateProfileKeys(tea.KeyMsg{Type: tea.KeyEnter})
@@ -445,7 +445,7 @@ func (m Model) updateProfilesMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 
 	inner := listRect.inner(m.styles.activePane)
 	row := msg.Y - inner.y - profileListHeaderRows + m.profileListScroll(inner.h)
-	if row < 0 || row >= len(m.profiles) || msg.Y < inner.y+profileListHeaderRows || msg.Y >= inner.y+inner.h-profileListActionRows {
+	if row < 0 || row >= len(m.profiles) || msg.Y < inner.y+profileListHeaderRows || msg.Y >= inner.y+inner.h-m.profileListActionRows() {
 		return m, nil
 	}
 	m.selectedProfile = row

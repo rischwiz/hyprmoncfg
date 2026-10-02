@@ -21,9 +21,23 @@ Running `hyprmoncfg` with no arguments opens the TUI.
 | `hyprmoncfg save <name>` | Save current monitor state as a named profile |
 | `hyprmoncfg apply <name>` | Apply a saved profile |
 | `hyprmoncfg delete <name>` | Delete a saved profile |
+| `hyprmoncfg rename <name> <new-name>` | Rename a saved profile without applying it |
+| `hyprmoncfg duplicate <name> <new-name>` | Save a copy of a profile under a new name without applying it |
 | `hyprmoncfg doctor` | Check that Hyprland loads hyprmoncfg's monitor config last |
 | `hyprmoncfg doctor --fix` | Add or move that include to the end of the Hyprland config |
 | `hyprmoncfg version` | Print build metadata |
+
+### Renaming and duplicating
+
+`rename` and `duplicate` change saved profiles only. The live layout stays as it
+is and no post-apply command runs. Both refuse a name that is already taken,
+including one that differs only in case or punctuation, because such names share
+a file. `rename` writes the profile under its new name before removing the old
+files, keeps its creation time, and refuses a profile file that is a symlink:
+rename that one at its source so your dotfile manager keeps tracking it.
+
+`duplicate` leaves the copy without a post-apply command. Pass `--copy-command`
+to carry it over.
 
 ### Common flags
 
