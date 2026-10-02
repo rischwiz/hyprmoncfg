@@ -84,7 +84,11 @@ func (s *Service) EditorState() (appstatus.EditorDocument, error) {
 	if err != nil {
 		return appstatus.EditorDocument{}, err
 	}
-	return appstatus.BuildEditor(profiles, monitors, rules), nil
+	document := appstatus.BuildEditor(profiles, monitors, rules)
+	if s.listICC != nil {
+		document.ICCProfiles = s.listICC()
+	}
+	return document, nil
 }
 
 // Read workspace rules between two bounded hardware reads. A dock change in

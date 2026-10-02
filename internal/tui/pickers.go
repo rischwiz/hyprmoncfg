@@ -118,15 +118,9 @@ func (m *Model) activateInspectorField() tea.Cmd {
 	case 17:
 		output := m.editOutputs[m.selectedOutput]
 		return m.openNumericInput(numericInputInt, m.selectedOutput, layoutFields[17], "Maximum frame-average luminance metadata in cd/m². Zero uses EDID.", fmt.Sprintf("%d", output.MaxAvgLuminance))
-	case 20:
-		output := m.editOutputs[m.selectedOutput]
-		return m.openNumericInput(
-			numericInputICC,
-			m.selectedOutput,
-			fmt.Sprintf("%s for %s", layoutFields[20], output.Name),
-			"Absolute path to an ICC device profile. Leave empty to clear. Enter applies. Esc cancels.",
-			output.ICC,
-		)
+	case iccField:
+		m.openICCPicker()
+		return nil
 	default:
 		m.adjustInspectorField(1)
 		return nil
@@ -222,6 +216,8 @@ func (m Model) pickerPrompt(name string) string {
 		return fmt.Sprintf("Pick a display mode for %s.", name)
 	case m.picker.FieldIndex == 2:
 		return fmt.Sprintf("Pick a sharp scale for %s, or Custom… to type one.", name)
+	case m.picker.FieldIndex == iccField:
+		return fmt.Sprintf("Pick a display profile for %s, or Custom path… to type one.", name)
 	default:
 		return fmt.Sprintf("Pick a value for %s.", name)
 	}
@@ -518,6 +514,9 @@ func (m *Model) commitModePicker() tea.Cmd {
 		m.setInspectorChoice(2, value)
 		return nil
 	}
+	if picker.FieldIndex == iccField && value == iccCustomValue {
+		return m.openICCEntry()
+	}
 
 	// A new mode or rotation can grow the display into a neighbour; that
 	// edit is refused, as the panel's editor refuses it.
@@ -548,6 +547,8 @@ func (m *Model) commitModePicker() tea.Cmd {
 
 func (m *Model) applyFieldPickerValue(output *editableOutput, field int, value string) {
 	switch field {
+	case iccField:
+		output.ICC = value
 	case 3:
 		output.Bitdepth, _ = strconv.Atoi(value)
 	case 4:

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/crmne/hyprmoncfg/internal/hypr"
+	"github.com/crmne/hyprmoncfg/internal/icc"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 	"github.com/crmne/hyprmoncfg/internal/scaling"
 )
@@ -154,6 +155,9 @@ type EditorDocument struct {
 	ProfileWorkspacePlans         map[string][]WorkspacePlan `json:"profile_workspace_plans"`
 	SourceProfile                 string                     `json:"source_profile,omitempty"`
 	SuggestedProfile              string                     `json:"suggested_profile,omitempty"`
+	// ICCProfiles are the display profiles installed on the daemon's system,
+	// for an editor's profile picker. Absent when none were found.
+	ICCProfiles []icc.Profile `json:"icc_profiles,omitempty"`
 }
 
 type EditorDraft struct {

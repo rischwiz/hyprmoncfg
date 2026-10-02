@@ -48,6 +48,12 @@ Errors replace `result` with an object containing a stable `code`, a human-reada
 | `delete` | `name` | none |
 | `set_profile_auto` | `enabled` boolean | none |
 
+`editor_state` may carry `icc_profiles`: the display profiles installed on the
+daemon's system as `{"path", "name"}` objects sorted by name, for an editor's
+profile picker. `path` is absolute and is what the `icc` edit expects; `name` is
+the description stored in the profile, or its file name. The key is absent when
+none were found. It is additive and older clients ignore it.
+
 A transaction contains an opaque `id`, the effective profile, and an RFC 3339 `deadline`.
 
 An omitted or nonpositive `timeout_seconds` uses the 30-second default. Explicit

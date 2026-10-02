@@ -108,6 +108,15 @@ Press `Enter` on any **Display** or **Color** field to edit it:
 
 The **Color** tab uses the same terminology as the Omarchy panel. **Color space / EOTF** combines the primaries and transfer function (for example, **BT.2020 + PQ (HDR)**). The picker shows descriptive labels but saves Hyprland's original values, such as `hdr`.
 
+**ICC device profile** opens a list of the display profiles installed on your
+system, each shown by the name stored in the profile with its file name beside
+it. **None** clears the setting and **Custom path…** takes an absolute path to a
+profile kept elsewhere. The list comes from `~/.local/share/icc` (or
+`$XDG_DATA_HOME/icc`), `~/.color/icc`, `/usr/local/share/color/icc`,
+`/usr/share/color/icc`, and `/var/lib/colord/icc`. Only display profiles are
+listed; printer and scanner profiles are left out. A profile already saved from
+somewhere else stays in the list. The profile stores the path, as before.
+
 **SDR luminance scale** and **SDR saturation scale** are unitless SDR-to-HDR multipliers, not physical brightness controls. An omitted or zero multiplier uses the neutral value `1`. Black, white, peak, and frame-average luminance are measured in **cd/m²**. Display luminance and WCG/HDR capability fields override display metadata; leave them at their defaults to use EDID. Narrow terminals shorten the labels without changing their meaning.
 
 ## Keep or Revert

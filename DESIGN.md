@@ -367,6 +367,13 @@ overlap; edits that would grow a display into a neighbour are refused unless
 the layout already overlapped. The TUI drag freezes the canvas transform at the
 press and derives the position from the grab origin, validating only on drop.
 
+Decision (ICC picker): the ICC field is a list of installed display profiles
+by their own names, with None and a typed path as the fallback. Discovery is
+`internal/icc`, bounded in depth and count, display-class profiles only. The
+daemon serves the list as `icc_profiles`. A profile is still stored as an
+absolute path, and choosing one remains an explicit act per display: nothing
+assigns a profile to a display automatically.
+
 Brightness stays a live hardware control in the compact panel, outside the expanded
 profile editor. Use the short heading `Brightness`; show the current target as
 secondary context when more than one display is connected. Capability limits such

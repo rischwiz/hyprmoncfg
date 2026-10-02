@@ -13,6 +13,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/apply"
 	"github.com/crmne/hyprmoncfg/internal/appstatus"
 	"github.com/crmne/hyprmoncfg/internal/hypr"
+	"github.com/crmne/hyprmoncfg/internal/icc"
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
 	"github.com/crmne/hyprmoncfg/internal/omarchywatch"
@@ -317,15 +318,18 @@ type Model struct {
 	activeProfileName     string
 	draftExec             string
 	disableUnknownOutputs bool
-	daemonOK              bool
-	daemonVersion         string
-	profileOverride       string
-	fallbacks             map[string]appstatus.MonitorFallback
-	profileModePending    bool
-	refreshInFlight       bool
-	applying              bool
-	quitAfterApply        bool
-	quitAfterRevert       bool
+	// listICC returns the installed display profiles. Nil scans the system;
+	// tests supply their own.
+	listICC            func() []icc.Profile
+	daemonOK           bool
+	daemonVersion      string
+	profileOverride    string
+	fallbacks          map[string]appstatus.MonitorFallback
+	profileModePending bool
+	refreshInFlight    bool
+	applying           bool
+	quitAfterApply     bool
+	quitAfterRevert    bool
 
 	width  int
 	height int

@@ -13,6 +13,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/apply"
 	"github.com/crmne/hyprmoncfg/internal/config"
 	"github.com/crmne/hyprmoncfg/internal/hypr"
+	"github.com/crmne/hyprmoncfg/internal/icc"
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
 	"github.com/crmne/hyprmoncfg/internal/omarchywatch"
@@ -79,6 +80,8 @@ type Service struct {
 	lidClosed    atomic.Bool
 	lidSupported bool
 
+	// listICC returns the installed display profiles for the editor's picker.
+	listICC      func() []icc.Profile
 	readLid      func(context.Context) (lid.State, error)
 	watchLid     func(context.Context, time.Duration) (<-chan lid.State, <-chan error)
 	watchSuspend func(context.Context) <-chan bool
@@ -197,6 +200,7 @@ func New(client *hypr.Client, store *profile.Store, cfg Config) *Service {
 		cfg:          cfg,
 		fallbacks:    newDisplayFallbacks(cfg.ConfigDir, cfg.Logf),
 		lidState:     lid.Unknown,
+		listICC:      func() []icc.Profile { return icc.List(icc.Dirs()) },
 		readLid:      lid.ReadState,
 		watchLid:     lid.Watch,
 		watchSuspend: suspend.Watch,

@@ -4,6 +4,10 @@ package tui
 // wire values. Keep these terms aligned with the Omarchy panel's inspector.
 func fieldOptionLabel(field int, value string) string {
 	switch field {
+	case iccField:
+		if value == "" {
+			return "None"
+		}
 	case 0:
 		switch value {
 		case "on":
