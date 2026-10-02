@@ -54,6 +54,9 @@ func (m *Model) adjustWorkspaceField(delta int) {
 		if m.workspaceEdit.Strategy == profile.WorkspaceStrategySequential && m.workspaceEdit.GroupSize > 0 {
 			m.workspaceEdit.LastSequentialGroupSize = m.workspaceEdit.GroupSize
 		}
+		// Picking any option here, Off included, is a deliberate choice that
+		// a newly connected display must not replace with the defaults.
+		m.workspaceEdit.Explicit = true
 		if next == workspaceStrategyOff {
 			m.workspaceEdit.Enabled = false
 			return

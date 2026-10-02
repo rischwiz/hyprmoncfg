@@ -40,6 +40,14 @@ display default. Each display still has only one default workspace. Manual plans
 use each rule's `persistent` flag instead. Both editors expose this as Persistence
 on the Workspaces page; no edits to generated files are needed.
 
+`workspaces.explicit: true` records that someone chose the planner state in an
+editor, by picking Off or a strategy. A planner that is off and explicit stays
+off when an unfamiliar display connects. One that is off without the marker,
+which includes every profile saved before the field existed, still gets the
+default sequential groups of three across nine workspaces. Nothing rewrites
+existing profiles; the marker appears the next time you pick a Strategy option
+and save. The Omarchy panel does not set it yet.
+
 Monitors are identified by hardware key (`make|model|serial`), not connector name. This means your profiles survive connector swaps between boots.
 
 ### Commands after applying a profile

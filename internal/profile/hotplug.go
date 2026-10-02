@@ -84,7 +84,9 @@ func ExtendConnected(p Profile, monitors []hypr.Monitor) Profile {
 		right += w
 		top, adjacentHeight, found = m.Y, h, true
 	}
-	if !p.Workspaces.Enabled {
+	// A planner someone turned off stays off. One that was never set gets the
+	// defaults, which is also how files from before Explicit existed behave.
+	if !p.Workspaces.Enabled && !p.Workspaces.Explicit {
 		p.Workspaces.Enabled = true
 		p.Workspaces.Strategy = WorkspaceStrategySequential
 		p.Workspaces.GroupSize = 3

@@ -145,6 +145,12 @@ defaults. The current bool cannot distinguish unset from explicitly disabled, so
 introduce a backward-compatible representation before implementing that distinction.
 Do not guess intent from `enabled: false` in existing files.
 
+Decision (planner intent): the representation is an optional `explicit` marker
+beside `enabled`, written when a person picks Off or a strategy in an editor.
+Off with the marker is preserved on hotplug; Off without it, including every
+existing file, keeps the defaults above. Nothing migrates old profiles. The TUI
+sets the marker; the panel does not yet, so parity is not claimed.
+
 Both clients show turning planning off as the **Off** choice of the Strategy
 control, first in the order Off, Manual, Sequential, Interleaved. Off stores
 `enabled: false` and keeps the saved strategy and plan, so choosing a strategy

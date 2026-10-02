@@ -255,6 +255,7 @@ type snapAnalysis struct {
 type workspaceEditor struct {
 	PersistAll              bool
 	Enabled                 bool
+	Explicit                bool
 	Strategy                profile.WorkspaceStrategy
 	MaxWorkspaces           int
 	GroupSize               int

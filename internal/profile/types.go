@@ -61,7 +61,11 @@ type WorkspaceRule struct {
 }
 
 type WorkspaceSettings struct {
-	Enabled       bool              `json:"enabled"`
+	Enabled bool `json:"enabled"`
+	// Explicit records that a person chose this planner state in an editor.
+	// Enabled alone cannot tell a deliberate Off from a profile that never had
+	// a plan, and files saved before this field read as not explicit.
+	Explicit      bool              `json:"explicit,omitempty"`
 	Strategy      WorkspaceStrategy `json:"strategy,omitempty"`
 	MaxWorkspaces int               `json:"max_workspaces,omitempty"`
 	GroupSize     int               `json:"group_size,omitempty"`

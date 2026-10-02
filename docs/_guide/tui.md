@@ -194,6 +194,9 @@ You can also configure:
 - **Workspace → display** (manual only) -- select a workspace and press `←` or `→` to assign it to a different monitor
 
 While the strategy is Off, the other rows show `—` and the workspace plan is empty.
+An Off you chose here is saved as deliberate, so connecting a new display does
+not turn planning back on. Profiles saved earlier with planning off keep the
+previous behavior until you pick a Strategy option and save again.
 
 There is no fixed workspace or group-size limit. Select **Max workspaces** or **Group size** and press `Enter` to type an exact count; `←` and `→` still make one-step adjustments.
 

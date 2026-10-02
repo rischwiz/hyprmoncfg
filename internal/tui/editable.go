@@ -136,6 +136,7 @@ func workspaceEditorFromSettings(settings profile.WorkspaceSettings, outputs []e
 	return workspaceEditor{
 		PersistAll:              settings.PersistAll,
 		Enabled:                 settings.Enabled,
+		Explicit:                settings.Explicit,
 		Strategy:                strategy,
 		MaxWorkspaces:           maxWorkspaces,
 		GroupSize:               groupSize,
@@ -193,6 +194,7 @@ func (w workspaceEditor) settings() profile.WorkspaceSettings {
 	return profile.WorkspaceSettings{
 		PersistAll:    w.PersistAll,
 		Enabled:       w.Enabled,
+		Explicit:      w.Explicit,
 		Strategy:      w.Strategy,
 		MaxWorkspaces: w.MaxWorkspaces,
 		GroupSize:     w.GroupSize,

@@ -1,7 +1,9 @@
 package profile
 
 import (
+	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/crmne/hyprmoncfg/internal/hypr"
@@ -97,5 +99,55 @@ func TestExtendConnectedWithoutSurvivingDisplayStartsAtOrigin(t *testing.T) {
 	got := ExtendConnected(p, []hypr.Monitor{{Name: "DP-1", Disabled: true, AvailableModes: []string{"1920x1080@60Hz"}}})
 	if len(got.Outputs) != 1 || got.Outputs[0].X != 0 || got.Outputs[0].Y != 0 {
 		t.Fatalf("unexpected initial layout: %+v", got.Outputs)
+	}
+}
+
+func TestExtendConnectedKeepsAPlannerSomeoneTurnedOff(t *testing.T) {
+	laptop := hypr.Monitor{Name: "eDP-1", Width: 1920, Height: 1080, Scale: 1}
+	external := hypr.Monitor{Name: "HDMI-A-1", Width: 1920, Height: 1080, Scale: 1}
+	monitors := []hypr.Monitor{laptop, external}
+
+	saved := FromMonitors("laptop", monitors[:1])
+	saved.Workspaces = WorkspaceSettings{Explicit: true, Strategy: WorkspaceStrategySequential, GroupSize: 4, MaxWorkspaces: 8}
+
+	got := ExtendConnected(saved, monitors)
+	if len(got.Outputs) != 2 {
+		t.Fatalf("the new display was not added: %+v", got.Outputs)
+	}
+	if got.Workspaces.Enabled {
+		t.Fatalf("a planner turned off on purpose was turned back on: %+v", got.Workspaces)
+	}
+	if got.Workspaces.GroupSize != 4 || got.Workspaces.MaxWorkspaces != 8 {
+		t.Fatalf("the saved plan was replaced: %+v", got.Workspaces)
+	}
+	if rules := ResolveWorkspaceRules(got, monitors); len(rules) != 0 {
+		t.Fatalf("an Off planner produced workspace rules: %+v", rules)
+	}
+}
+
+func TestPlannerExplicitIsAbsentFromFilesThatNeverSetIt(t *testing.T) {
+	// A profile written before the field existed has no "explicit" key and
+	// must keep reading as not explicit, so it still gets the defaults.
+	var legacy WorkspaceSettings
+	if err := json.Unmarshal([]byte(`{"enabled": false, "strategy": "sequential"}`), &legacy); err != nil {
+		t.Fatal(err)
+	}
+	if legacy.Explicit {
+		t.Fatal("a legacy planner read as explicit")
+	}
+	encoded, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), "explicit") {
+		t.Fatalf("an unset marker was written out: %s", encoded)
+	}
+
+	chosen, err := json.Marshal(WorkspaceSettings{Explicit: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(chosen), `"explicit":true`) {
+		t.Fatalf("a deliberate Off was not written out: %s", chosen)
 	}
 }

@@ -101,3 +101,28 @@ func TestWorkspaceRowsAreInertWhileOff(t *testing.T) {
 		t.Fatalf("Off footer advertises count entry: %s", footer)
 	}
 }
+
+// Choosing a Strategy option, Off included, is recorded as a deliberate choice
+// so a newly connected display does not replace it with the defaults.
+func TestChoosingAStrategyMarksThePlannerExplicit(t *testing.T) {
+	m := Model{
+		editOutputs: []editableOutput{{Key: "mon-a", Name: "DP-1", Enabled: true, Scale: 1}},
+		workspaceEdit: workspaceEditorFromSettings(profile.WorkspaceSettings{
+			Enabled: true, Strategy: profile.WorkspaceStrategyManual, MaxWorkspaces: 2,
+		}, nil),
+	}
+	if m.workspaceEdit.settings().Explicit {
+		t.Fatal("a loaded plan should not read as explicit before anyone changes it")
+	}
+
+	m.adjustWorkspaceField(-1)
+	settings := m.workspaceEdit.settings()
+	if settings.Enabled || !settings.Explicit {
+		t.Fatalf("choosing Off should save an explicit Off, got %+v", settings)
+	}
+
+	reloaded := workspaceEditorFromSettings(settings, m.editOutputs)
+	if !reloaded.settings().Explicit {
+		t.Fatal("the explicit marker was lost when the profile was loaded again")
+	}
+}
