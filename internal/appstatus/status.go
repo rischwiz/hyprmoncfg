@@ -177,6 +177,11 @@ type EditorDisplay struct {
 	Workspace      string    `json:"workspace,omitempty"`
 	AvailableModes []string  `json:"available_modes"`
 	ScaleOptions   []float64 `json:"scale_options"`
+	// RecommendedMode is the advertised mode an editor should mark as
+	// recommended. RecommendedScale is set only when the panel reports a
+	// physical size that can be trusted; both are absent otherwise.
+	RecommendedMode  string  `json:"recommended_mode,omitempty"`
+	RecommendedScale float64 `json:"recommended_scale,omitempty"`
 }
 
 // BuildEditor turns live Hyprland state into an editable profile without
@@ -215,16 +220,23 @@ func BuildEditor(profiles []profile.Profile, monitors []hypr.Monitor, rules []hy
 		if current != "" && !found {
 			modes = append([]string{current}, modes...)
 		}
+		recommendedMode, _, _, _, _ := profile.RecommendedMode(monitor.AvailableModes)
+		recommendedScale, scaleKnown := scaling.Recommend(monitor.Width, monitor.Height, monitor.PhysicalWidth, monitor.PhysicalHeight)
+		if !scaleKnown {
+			recommendedScale = 0
+		}
 		document.Displays = append(document.Displays, EditorDisplay{
-			Key:            hypr.MonitorOutputKey(monitor, matchCounts),
-			Focused:        monitor.Focused,
-			Internal:       monitor.IsInternal(),
-			DPMS:           monitor.DPMSStatus,
-			PhysicalWidth:  monitor.PhysicalWidth,
-			PhysicalHeight: monitor.PhysicalHeight,
-			Workspace:      monitor.ActiveWorkspace.Name,
-			AvailableModes: modes,
-			ScaleOptions:   editorScaleOptions(monitor.Width, monitor.Height, monitor.Scale),
+			RecommendedMode:  recommendedMode,
+			RecommendedScale: recommendedScale,
+			Key:              hypr.MonitorOutputKey(monitor, matchCounts),
+			Focused:          monitor.Focused,
+			Internal:         monitor.IsInternal(),
+			DPMS:             monitor.DPMSStatus,
+			PhysicalWidth:    monitor.PhysicalWidth,
+			PhysicalHeight:   monitor.PhysicalHeight,
+			Workspace:        monitor.ActiveWorkspace.Name,
+			AvailableModes:   modes,
+			ScaleOptions:     editorScaleOptions(monitor.Width, monitor.Height, monitor.Scale),
 		})
 	}
 

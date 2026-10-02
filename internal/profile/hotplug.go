@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/crmne/hyprmoncfg/internal/hypr"
+	"github.com/crmne/hyprmoncfg/internal/scaling"
 )
 
 // ExtendConnected adds displays absent from a saved profile to its right edge.
@@ -57,17 +58,14 @@ func ExtendConnected(p Profile, monitors []hypr.Monitor) Profile {
 	})
 	counts := hypr.MonitorMatchCounts(monitors)
 	for _, m := range omitted {
-		// Choose a supported pair, not independent resolution/refresh maxima.
-		bestArea, bestRefresh := 0, 0.0
-		for _, mode := range m.AvailableModes {
-			if w, h, hz, ok := hypr.ParseMode(mode); ok && w > 0 && h > 0 && hz > 0 {
-				if area := w * h; area > bestArea || (area == bestArea && hz > bestRefresh) {
-					m.Width, m.Height, m.RefreshRate = w, h, hz
-					bestArea, bestRefresh = area, hz
-				}
-			}
+		if _, w, h, hz, ok := RecommendedMode(m.AvailableModes); ok {
+			m.Width, m.Height, m.RefreshRate = w, h, hz
 		}
-		if m.Scale <= 0 {
+		// A trustworthy physical size gives a readable scale. Without one,
+		// keep what the compositor chose, or 1x when it chose nothing.
+		if scale, ok := scaling.Recommend(m.Width, m.Height, m.PhysicalWidth, m.PhysicalHeight); ok {
+			m.Scale = scale
+		} else if m.Scale <= 0 {
 			m.Scale = 1
 		}
 		m.Disabled, m.MirrorOf, m.Transform = false, "", 0

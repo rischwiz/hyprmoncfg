@@ -118,6 +118,17 @@ EDID dimensions need a documented fallback, initially 1x. Never infer a projecto
 viewing distance from its physical-size metadata. Show the recommendation and allow
 an exact override in both clients.
 
+Decision (recommendations): `scaling.Recommend` picks the Scale preset closest
+to about 110 logical pixels per inch from the reported panel size, the lower
+preset on a tie. It reports nothing for a missing size, a diagonal under 5 or
+over 60 inches, or a shape that disagrees with the mode, and the display then
+keeps the compositor's scale (1x if it has none). `profile.RecommendedMode` is
+the largest advertised resolution at its highest advertised refresh. Automatic
+extension uses both for unfamiliar displays only. Editors mark the entry
+`Recommended` in the Mode list and the full Scale list and name the scale under
+the pills; pill labels do not change. The density target and size limits are
+starting points awaiting hardware evidence.
+
 Maximum resolution and refresh describe a valid advertised **pair**, not two
 independent maxima. If application fails, try the preferred advertised mode,
 then lower supported refresh/resolution candidates in a bounded recovery pass.

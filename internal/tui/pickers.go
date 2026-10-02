@@ -33,8 +33,13 @@ func (m *Model) activateInspectorField() tea.Cmd {
 			return nil
 		}
 		items := make([]list.Item, 0, len(output.Modes))
+		recommended := output.recommendedMode()
 		for _, mode := range output.Modes {
-			items = append(items, fieldPickerItem{pickerItem: pickerItem(mode), label: displayModeLabel(mode)})
+			label := displayModeLabel(mode)
+			if mode == recommended {
+				label += recommendedSuffix
+			}
+			items = append(items, fieldPickerItem{pickerItem: pickerItem(mode), label: label})
 		}
 		inner := list.NewDefaultDelegate()
 		inner.ShowDescription = false
@@ -155,9 +160,13 @@ func (m *Model) openScalePicker() {
 	output := m.editOutputs[m.selectedOutput]
 	choices := scaling.Choices(output.Width, output.Height, output.Scale)
 	labels := scaleChoiceLabels(choices)
+	recommended, known := output.recommendedScale()
 	options := make([]string, 0, len(choices)+1)
-	for _, choice := range choices {
+	for idx, choice := range choices {
 		options = append(options, strconv.FormatFloat(choice, 'f', -1, 64))
+		if known && choice == recommended {
+			labels[idx] += recommendedSuffix
+		}
 	}
 	options = append(options, scaleCustomValue)
 	labels = append(labels, "Custom…")

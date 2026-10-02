@@ -99,3 +99,55 @@ func TestExtendConnectedWithoutSurvivingDisplayStartsAtOrigin(t *testing.T) {
 		t.Fatalf("unexpected initial layout: %+v", got.Outputs)
 	}
 }
+
+func TestExtendConnectedRecommendsAScaleFromThePanelSize(t *testing.T) {
+	laptop := hypr.Monitor{Name: "eDP-1", Make: "BOE", Model: "Panel", Width: 1920, Height: 1080, Scale: 1}
+	// A 27 inch 4K display the compositor brought up at 1x.
+	desk := hypr.Monitor{
+		Name: "DP-1", Make: "Acme", Model: "U27", Width: 1920, Height: 1080, Scale: 1,
+		PhysicalWidth: 597, PhysicalHeight: 336,
+		AvailableModes: []string{"1920x1080@60.00Hz", "3840x2160@60.00Hz", "3840x2160@144.00Hz"},
+	}
+	// A projector whose reported size says nothing about viewing distance.
+	projector := hypr.Monitor{
+		Name: "HDMI-A-1", Make: "Acme", Model: "Beam", Width: 1920, Height: 1080, Scale: 1.25,
+		PhysicalWidth: 2210, PhysicalHeight: 1240,
+		AvailableModes: []string{"1920x1080@60.00Hz"},
+	}
+	monitors := []hypr.Monitor{laptop, desk, projector}
+	saved := FromMonitors("laptop", monitors[:1])
+
+	got := ExtendConnected(saved, monitors)
+	byName := map[string]OutputConfig{}
+	for _, output := range got.Outputs {
+		byName[output.Name] = output
+	}
+
+	added := byName["DP-1"]
+	if added.Width != 3840 || added.Height != 2160 || added.Refresh != 144 {
+		t.Fatalf("mode = %dx%d@%v, want the largest resolution at its highest refresh", added.Width, added.Height, added.Refresh)
+	}
+	if added.Scale != 1.5 {
+		t.Fatalf("scale = %v, want the recommended 1.5 for a 27 inch 4K panel", added.Scale)
+	}
+	if byName["HDMI-A-1"].Scale != 1.25 {
+		t.Fatalf("projector scale = %v, want the compositor's own 1.25 kept", byName["HDMI-A-1"].Scale)
+	}
+	if byName["eDP-1"].Scale != 1 {
+		t.Fatalf("the saved display's scale changed to %v", byName["eDP-1"].Scale)
+	}
+}
+
+func TestRecommendedModeIsAnAdvertisedPair(t *testing.T) {
+	// 144 Hz exists only at 1440p here; the recommendation must not pair it
+	// with the 4K resolution.
+	mode, width, height, refresh, ok := RecommendedMode([]string{
+		"2560x1440@144.00Hz", "3840x2160@60.00Hz", "3840x2160@30.00Hz", "preferred",
+	})
+	if !ok || mode != "3840x2160@60.00Hz" || width != 3840 || height != 2160 || refresh != 60 {
+		t.Fatalf("recommended = %q %dx%d@%v %v", mode, width, height, refresh, ok)
+	}
+	if _, _, _, _, ok := RecommendedMode(nil); ok {
+		t.Fatal("a display that advertises nothing got a recommendation")
+	}
+}

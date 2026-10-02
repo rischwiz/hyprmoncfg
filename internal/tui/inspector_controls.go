@@ -243,6 +243,10 @@ func (m Model) renderScaleRow(output editableOutput, width int, focused, wrap bo
 			// Say why the saved scale is marked; it stays selectable as is.
 			lines = append(lines, m.styles.warning.Render("⚠ fractional px"))
 		}
+		// The pills keep their plain labels; the recommendation sits below.
+		if recommended, known := output.recommendedScale(); known {
+			lines = append(lines, m.styles.subtle.Render("Recommended "+displayNumber(recommended, 2)+"x"))
+		}
 		return lines, spans
 	}
 

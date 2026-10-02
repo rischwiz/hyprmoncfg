@@ -48,6 +48,13 @@ Errors replace `result` with an object containing a stable `code`, a human-reada
 | `delete` | `name` | none |
 | `set_profile_auto` | `enabled` boolean | none |
 
+Each entry of `editor_state`'s `displays` may carry `recommended_mode`, the
+largest advertised resolution at its highest advertised refresh, and
+`recommended_scale`, a readable sharp scale for the current mode. The scale is
+present only when the display reports a physical size that can be trusted;
+editors should show no scale recommendation when it is absent. Both fields are
+additive and older clients ignore them.
+
 A transaction contains an opaque `id`, the effective profile, and an RFC 3339 `deadline`.
 
 An omitted or nonpositive `timeout_seconds` uses the 30-second default. Explicit
