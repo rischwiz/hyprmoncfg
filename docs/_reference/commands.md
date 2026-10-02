@@ -48,6 +48,11 @@ Both `hyprmoncfg` and `hyprmoncfgd` use these variables when the corresponding f
 |------|-------------|
 | `--confirm-timeout <seconds>` | Seconds to wait for confirmation before reverting (default: 30) |
 | `--confirm-timeout 0` | Disable the revert timer entirely |
+| `--dry-run` | Print the monitor config and workspace commands `apply` would use, then exit without changing anything |
+
+`--dry-run` reads from Hyprland directly and never takes the writer lock, so it
+works while the daemon is running. It does not show the Omarchy wake rule or
+laptop toggle the daemon keeps alongside the generated file.
 
 ## `hyprmoncfgd`
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/crmne/hyprmoncfg/internal/apply"
 	"github.com/crmne/hyprmoncfg/internal/config"
 )
 
@@ -46,5 +47,30 @@ func TestDoctorReportsMissingGeneratedMonitorConfig(t *testing.T) {
 	got := output.String()
 	if !strings.Contains(got, "PROBLEM") || !strings.Contains(got, "does not exist") {
 		t.Fatalf("doctor output did not report the missing generated file:\n%s", got)
+	}
+}
+
+func TestWriteApplyPlanSaysNothingChanged(t *testing.T) {
+	var out bytes.Buffer
+	writeApplyPlan(&out, "desk", apply.Plan{
+		MonitorsPath:      "/tmp/hyprmoncfg-monitors.conf",
+		Rendered:          "monitor = DP-1, 2560x1440@144, 0x0, 1\n",
+		WorkspaceCommands: []string{"keyword workspace 1, monitor:DP-1"},
+	})
+	for _, want := range []string{
+		"Dry run for profile \"desk\". Nothing was changed.",
+		"Would write /tmp/hyprmoncfg-monitors.conf:",
+		"monitor = DP-1, 2560x1440@144, 0x0, 1\n",
+		"Would then run:\n\nkeyword workspace 1, monitor:DP-1\n",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("missing %q in:\n%s", want, out.String())
+		}
+	}
+
+	out.Reset()
+	writeApplyPlan(&out, "desk", apply.Plan{Rendered: "monitor = DP-1, preferred, auto, 1\n"})
+	if !strings.Contains(out.String(), "No workspace commands would run.") {
+		t.Fatalf("plan without workspace commands does not say so:\n%s", out.String())
 	}
 }

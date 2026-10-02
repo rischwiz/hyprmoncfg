@@ -263,6 +263,7 @@ func newSaveCmd(configDir *string) *cobra.Command {
 
 func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *cobra.Command {
 	var confirmTimeout int
+	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "apply <name>",
@@ -276,6 +277,9 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 			p, err := store.Load(args[0])
 			if err != nil {
 				return err
+			}
+			if dryRun {
+				return runApplyDryRun(cmd, client, p, *monitorsConf, *hyprConfig)
 			}
 			session, err := openWriterSession(cmd.Context())
 			if err != nil {
@@ -359,7 +363,44 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 		},
 	}
 	cmd.Flags().IntVar(&confirmTimeout, "confirm-timeout", int(apply.DefaultPreviewTimeout/time.Second), "Seconds to confirm configuration before reverting; set 0 to disable")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the monitor config and workspace commands apply would use, without changing anything")
 	return cmd
+}
+
+// runApplyDryRun prints what apply would write and run. It reads from
+// Hyprland and writes nothing, so it does not take the writer lock or go
+// through the daemon.
+func runApplyDryRun(cmd *cobra.Command, client *hypr.Client, p profile.Profile, monitorsConf string, hyprConfig string) error {
+	ctx, cancel := context.WithTimeout(cmd.Context(), 8*time.Second)
+	defer cancel()
+	monitors, err := client.Monitors(ctx)
+	if err != nil {
+		return err
+	}
+	if state, err := lid.ReadState(ctx); err == nil && state == lid.Closed {
+		p, _ = profile.ApplyClosedLidPolicy(p, monitors)
+	}
+	engine := apply.Engine{Client: client, MonitorsConfPath: monitorsConf, HyprlandConfigPath: hyprConfig}
+	plan, err := engine.Plan(ctx, p, monitors)
+	if err != nil {
+		return err
+	}
+	writeApplyPlan(cmd.OutOrStdout(), p.Name, plan)
+	return nil
+}
+
+func writeApplyPlan(out io.Writer, name string, plan apply.Plan) {
+	fmt.Fprintf(out, "Dry run for profile %q. Nothing was changed.\n\n", name)
+	fmt.Fprintf(out, "Would write %s:\n\n%s\n", plan.MonitorsPath, strings.TrimRight(plan.Rendered, "\n"))
+	if len(plan.WorkspaceCommands) == 0 {
+		fmt.Fprintln(out, "\nNo workspace commands would run.")
+		return
+	}
+	fmt.Fprintln(out, "\nWould then run:")
+	fmt.Fprintln(out)
+	for _, command := range plan.WorkspaceCommands {
+		fmt.Fprintln(out, command)
+	}
 }
 
 func newDeleteCmd(configDir *string) *cobra.Command {
