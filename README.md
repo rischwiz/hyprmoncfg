@@ -1,4 +1,5 @@
 <div align="center">
+<strong> This is a fork of hyprmoncfg by Carmine.</strong>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/images/logotype_dark.svg">
