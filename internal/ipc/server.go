@@ -1,6 +1,8 @@
 package ipc
 
 import (
+	"github.com/crmne/hyprmoncfg/internal/prefs"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -239,6 +241,13 @@ func (s *Server) dispatch(owner string, client *serverClient, request Request) R
 		var params ProfileAutoParams
 		if err = decodeParams(request.Params, &params); err == nil {
 			err = s.Handler.SetProfileAuto(params)
+		}
+	case MethodGetPrefs:
+		result, err = s.Handler.Preferences()
+	case MethodSetPrefs:
+		var params prefs.Preferences
+		if err = decodeParams(request.Params, &params); err == nil {
+			result, err = s.Handler.SetPreferences(params)
 		}
 	default:
 		err = fmt.Errorf("unknown IPC method %q", request.Method)

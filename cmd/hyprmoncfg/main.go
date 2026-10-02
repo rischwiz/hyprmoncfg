@@ -25,6 +25,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
 	"github.com/crmne/hyprmoncfg/internal/omarchywatch"
+	"github.com/crmne/hyprmoncfg/internal/prefs"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 	"github.com/crmne/hyprmoncfg/internal/profileio"
 	"github.com/crmne/hyprmoncfg/internal/tui"
@@ -63,6 +64,7 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newApplyCmd(&configDir, &monitorsConf, &hyprConfig))
 	root.AddCommand(newDeleteCmd(&configDir))
 	root.AddCommand(newDoctorCmd(&monitorsConf, &hyprConfig))
+	root.AddCommand(newPreferencesCmd(&configDir))
 	root.AddCommand(newManageCmd(&configDir, &monitorsConf, &hyprConfig))
 	root.AddCommand(newUnmanageCmd(&configDir, &monitorsConf, &hyprConfig))
 	root.AddCommand(newVersionCmd("hyprmoncfg"))
@@ -277,6 +279,11 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 			if err != nil {
 				return err
 			}
+			if !cmd.Flags().Changed("confirm-timeout") {
+				// The flag wins when given; otherwise use the saved preference.
+				saved, _ := prefs.Load(store.BaseDir())
+				confirmTimeout = saved.PreviewTimeoutSeconds
+			}
 			session, err := openWriterSession(cmd.Context())
 			if err != nil {
 				return err
@@ -358,7 +365,7 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 			return err
 		},
 	}
-	cmd.Flags().IntVar(&confirmTimeout, "confirm-timeout", int(apply.DefaultPreviewTimeout/time.Second), "Seconds to confirm configuration before reverting; set 0 to disable")
+	cmd.Flags().IntVar(&confirmTimeout, "confirm-timeout", int(apply.DefaultPreviewTimeout/time.Second), "Seconds to confirm configuration before reverting; set 0 to disable (default: the saved preference, 30 unless changed)")
 	return cmd
 }
 
@@ -390,6 +397,63 @@ func newDeleteCmd(configDir *string) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func newPreferencesCmd(configDir *string) *cobra.Command {
+	var previewTimeout int
+	var jsonOutput bool
+
+	cmd := &cobra.Command{
+		Use:   "preferences",
+		Short: "Show or change application preferences",
+		Long: "Show application preferences, or change one with a flag. Preferences " +
+			"belong to you, not to a profile, and apply to the daemon, the TUI and the CLI.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, store, err := bootstrap(*configDir)
+			if err != nil {
+				return err
+			}
+			session, err := openWriterSession(cmd.Context())
+			if err != nil {
+				return err
+			}
+			defer session.Close()
+			ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
+			defer cancel()
+
+			var current prefs.Preferences
+			if session.ipc != nil {
+				current, err = session.ipc.Preferences(ctx)
+			} else {
+				current, err = prefs.Load(store.BaseDir())
+			}
+			if err != nil {
+				return err
+			}
+			if cmd.Flags().Changed("preview-timeout") {
+				current.PreviewTimeoutSeconds = previewTimeout
+				if session.ipc != nil {
+					current, err = session.ipc.SetPreferences(ctx, current)
+				} else {
+					current, err = prefs.Save(store.BaseDir(), current)
+				}
+				if err != nil {
+					return err
+				}
+			}
+			if jsonOutput {
+				encoder := json.NewEncoder(cmd.OutOrStdout())
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(current)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Preview time: %d seconds\n", current.PreviewTimeoutSeconds)
+			return nil
+		},
+	}
+	cmd.Flags().IntVar(&previewTimeout, "preview-timeout", prefs.DefaultPreviewTimeoutSeconds, "Seconds a preview waits for Keep before reverting: 15, 30, 60, or 120")
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Print the preferences as JSON")
+	return cmd
 }
 
 func newDoctorCmd(monitorsConf *string, hyprConfig *string) *cobra.Command {

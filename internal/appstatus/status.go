@@ -14,6 +14,15 @@ import (
 
 const SchemaVersion = 1
 
+// Capabilities name daemon operations added after the first protocol release,
+// so a client can tell a daemon that lacks one from one that failed. A daemon
+// keeps running its old binary until the service is restarted.
+const CapabilityPreferences = "preferences"
+
+func daemonCapabilities() []string {
+	return []string{CapabilityPreferences}
+}
+
 // HardwareSnapshotHash identifies the output keys and their current connector
 // bindings, including the paths used to distinguish otherwise identical panels.
 // It deliberately excludes layout, focus and power state. This is an opaque
@@ -40,9 +49,12 @@ func HardwareSnapshotHash(monitors []hypr.Monitor) string {
 }
 
 type Document struct {
-	MonitorSetHash     string            `json:"monitor_set_hash,omitempty"`
-	SchemaVersion      int               `json:"schema_version"`
-	Version            string            `json:"version"`
+	MonitorSetHash string `json:"monitor_set_hash,omitempty"`
+	SchemaVersion  int    `json:"schema_version"`
+	Version        string `json:"version"`
+	// Capabilities is set by a running daemon. It is absent from older daemons
+	// and from documents built without one.
+	Capabilities       []string          `json:"capabilities,omitempty"`
 	Daemon             Daemon            `json:"daemon"`
 	ActiveProfile      *ProfileReference `json:"active_profile"`
 	RecommendedProfile *ProfileMatch     `json:"recommended_profile"`
@@ -65,6 +77,17 @@ type Daemon struct {
 	// rebuilt for the new monitor layout. A replacement panel can present the
 	// same confirmation and reclaim the transaction before its deadline.
 	Preview *PreviewReference `json:"preview,omitempty"`
+}
+
+// HasCapability reports whether the daemon that produced the document
+// supports an operation.
+func (d Document) HasCapability(capability string) bool {
+	for _, supported := range d.Capabilities {
+		if supported == capability {
+			return true
+		}
+	}
+	return false
 }
 
 type PreviewReference struct {
@@ -267,6 +290,9 @@ func Build(version string, daemonRunning bool, profiles []profile.Profile, monit
 		Daemon:         Daemon{Running: daemonRunning},
 		Profiles:       make([]ProfileSummary, 0, len(profiles)),
 		Monitors:       make([]MonitorSummary, 0, len(monitors)),
+	}
+	if daemonRunning {
+		document.Capabilities = daemonCapabilities()
 	}
 
 	activeName := ""

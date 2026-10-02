@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/crmne/hyprmoncfg/internal/appstatus"
+	"github.com/crmne/hyprmoncfg/internal/prefs"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 )
 
@@ -38,6 +39,8 @@ const (
 	MethodManage      = "manage"
 	MethodUnmanage    = "unmanage"
 	MethodProfileAuto = "set_profile_auto"
+	MethodGetPrefs    = "get_preferences"
+	MethodSetPrefs    = "set_preferences"
 )
 
 const EventStatus = "status"
@@ -134,5 +137,9 @@ type Handler interface {
 	Manage() error
 	Unmanage() error
 	SetProfileAuto(params ProfileAutoParams) error
+	// Preferences are application settings, validated and stored by the
+	// daemon. SetPreferences returns what was saved.
+	Preferences() (prefs.Preferences, error)
+	SetPreferences(params prefs.Preferences) (prefs.Preferences, error)
 	Disconnect(owner string)
 }

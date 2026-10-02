@@ -559,7 +559,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		deadline := msg.deadline
 		if deadline.IsZero() {
-			deadline = m.clock().Add(apply.DefaultPreviewTimeout)
+			// Without a daemon the editor owns the deadline and reads the
+			// same saved preference the daemon would.
+			deadline = m.clock().Add(m.previewTimeout())
 		}
 		m.pending = &pendingApply{
 			profile:       msg.profile,

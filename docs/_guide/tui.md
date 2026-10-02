@@ -211,6 +211,7 @@ Internal laptop panels are marked as internal displays in the layout view. The T
 
 Profiles are still profiles for the attached monitor setup, not separate open-lid and closed-lid variants. The closed-lid policy only forces internal laptop panels off when a real external output already has a usable, awake mode and the target profile keeps it enabled. A modeless dock output, sleeping display, or synthetic fallback does not qualify. Workspace rules move away from a forced-off panel.
 
-Interactive previews default to 30 seconds after verification. Confirming a saved
+Interactive previews wait 30 seconds after verification unless you saved another
+preview time with `hyprmoncfg preferences --preview-timeout`. Confirming a saved
 profile pauses automatic selection for the current display setup. There is no
 need to turn automatic selection off before starting a preview.

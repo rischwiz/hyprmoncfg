@@ -15,6 +15,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/appstatus"
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
+	"github.com/crmne/hyprmoncfg/internal/prefs"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 	"github.com/crmne/hyprmoncfg/internal/profileio"
 )
@@ -215,6 +216,16 @@ func (m Model) saveProfileCmd(p profile.Profile) tea.Cmd {
 		}
 		return saveMsg{name: p.Name, profileTab: true}
 	}
+}
+
+// previewTimeout is the saved confirmation time, or the default when there is
+// no store to read it from or the file cannot be used.
+func (m Model) previewTimeout() time.Duration {
+	if m.store == nil {
+		return apply.DefaultPreviewTimeout
+	}
+	loaded, _ := prefs.Load(m.store.BaseDir())
+	return loaded.PreviewTimeout()
 }
 
 func (m Model) deleteCmd(name string) tea.Cmd {

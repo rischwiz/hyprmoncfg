@@ -23,6 +23,9 @@ Running `hyprmoncfg` with no arguments opens the TUI.
 | `hyprmoncfg delete <name>` | Delete a saved profile |
 | `hyprmoncfg doctor` | Check that Hyprland loads hyprmoncfg's monitor config last |
 | `hyprmoncfg doctor --fix` | Add or move that include to the end of the Hyprland config |
+| `hyprmoncfg preferences` | Show application preferences |
+| `hyprmoncfg preferences --preview-timeout <seconds>` | Set how long a preview waits for Keep: 15, 30, 60, or 120 |
+| `hyprmoncfg preferences --json` | Print the preferences as JSON |
 | `hyprmoncfg version` | Print build metadata |
 
 ### Common flags
@@ -46,7 +49,7 @@ Both `hyprmoncfg` and `hyprmoncfgd` use these variables when the corresponding f
 
 | Flag | Description |
 |------|-------------|
-| `--confirm-timeout <seconds>` | Seconds to wait for confirmation before reverting (default: 30) |
+| `--confirm-timeout <seconds>` | Seconds to wait for confirmation before reverting (default: the saved preview time, 30 unless you changed it) |
 | `--confirm-timeout 0` | Disable the revert timer entirely |
 
 ## `hyprmoncfgd`

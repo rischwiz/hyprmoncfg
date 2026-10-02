@@ -7,11 +7,13 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/crmne/hyprmoncfg/internal/appstatus"
+	"github.com/crmne/hyprmoncfg/internal/prefs"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 )
 
@@ -24,6 +26,7 @@ type testHandler struct {
 	managed      bool
 	profileAuto  bool
 	disconnected []string
+	preferences  prefs.Preferences
 	editor       appstatus.EditorDocument
 	edited       appstatus.EditorDraft
 }
@@ -63,6 +66,22 @@ func (h *testHandler) SetProfileAuto(params ProfileAutoParams) error {
 	defer h.mu.Unlock()
 	h.profileAuto = params.Enabled
 	return nil
+}
+
+func (h *testHandler) Preferences() (prefs.Preferences, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.preferences, nil
+}
+
+func (h *testHandler) SetPreferences(params prefs.Preferences) (prefs.Preferences, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if err := params.Validate(); err != nil {
+		return prefs.Preferences{}, err
+	}
+	h.preferences = params
+	return params, nil
 }
 
 func (h *testHandler) Disconnect(owner string) {
@@ -377,5 +396,57 @@ func TestDispatchRoutesProfileAutomaticMode(t *testing.T) {
 	handler.mu.Unlock()
 	if !got {
 		t.Fatal("profile automatic mode was not routed to the handler")
+	}
+}
+
+func TestClientReadsAndSavesPreferences(t *testing.T) {
+	handler := &testHandler{
+		document:    appstatus.Document{Capabilities: []string{appstatus.CapabilityPreferences}},
+		preferences: prefs.Default(),
+	}
+	_, path, _ := runTestServer(t, handler)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	client, err := Dial(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	current, err := client.Preferences(ctx)
+	if err != nil || current.PreviewTimeoutSeconds != 30 {
+		t.Fatalf("preferences = %+v, %v", current, err)
+	}
+	current.PreviewTimeoutSeconds = 120
+	saved, err := client.SetPreferences(ctx, current)
+	if err != nil || saved.PreviewTimeoutSeconds != 120 {
+		t.Fatalf("saved = %+v, %v", saved, err)
+	}
+
+	current.PreviewTimeoutSeconds = 7
+	if _, err := client.SetPreferences(ctx, current); err == nil {
+		t.Fatal("the daemon accepted a preview time that is not offered")
+	}
+	if again, _ := client.Preferences(ctx); again.PreviewTimeoutSeconds != 120 {
+		t.Fatalf("a refused change was stored: %+v", again)
+	}
+}
+
+func TestClientRefusesPreferencesOnAnOlderDaemon(t *testing.T) {
+	handler := &testHandler{document: appstatus.Document{Daemon: appstatus.Daemon{Running: true}}}
+	_, path, _ := runTestServer(t, handler)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	client, err := Dial(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	if _, err := client.Preferences(ctx); err == nil || !strings.Contains(err.Error(), "newer daemon") {
+		t.Fatalf("read on an older daemon: %v", err)
+	}
+	if _, err := client.SetPreferences(ctx, prefs.Default()); err == nil || !strings.Contains(err.Error(), "newer daemon") {
+		t.Fatalf("save on an older daemon: %v", err)
 	}
 }

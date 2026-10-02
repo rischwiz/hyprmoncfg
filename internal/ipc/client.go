@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/crmne/hyprmoncfg/internal/appstatus"
+	"github.com/crmne/hyprmoncfg/internal/prefs"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 )
 
@@ -138,6 +139,40 @@ func (c *Client) Manage(ctx context.Context) error {
 // include out, so whatever the user or their distro configured wins again.
 func (c *Client) Unmanage(ctx context.Context) error {
 	return c.call(ctx, MethodUnmanage, nil, nil)
+}
+
+// Preferences reads the application preferences the daemon applies.
+func (c *Client) Preferences(ctx context.Context) (prefs.Preferences, error) {
+	if err := c.requirePreferences(ctx); err != nil {
+		return prefs.Preferences{}, err
+	}
+	var result prefs.Preferences
+	err := c.call(ctx, MethodGetPrefs, nil, &result)
+	return result, err
+}
+
+// SetPreferences saves preferences through the daemon and returns what it
+// stored. The daemon validates them.
+func (c *Client) SetPreferences(ctx context.Context, p prefs.Preferences) (prefs.Preferences, error) {
+	if err := c.requirePreferences(ctx); err != nil {
+		return prefs.Preferences{}, err
+	}
+	var result prefs.Preferences
+	err := c.call(ctx, MethodSetPrefs, p, &result)
+	return result, err
+}
+
+// requirePreferences turns an older daemon's "unknown IPC method" into
+// advice. The daemon keeps running its old binary until it is restarted.
+func (c *Client) requirePreferences(ctx context.Context) error {
+	document, err := c.Status(ctx)
+	if err != nil {
+		return err
+	}
+	if !document.HasCapability(appstatus.CapabilityPreferences) {
+		return errors.New("preferences require a newer daemon; restart the updated hyprmoncfgd")
+	}
+	return nil
 }
 
 func (c *Client) SetProfileAuto(ctx context.Context, enabled bool) error {

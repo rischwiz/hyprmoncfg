@@ -16,6 +16,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/hypr"
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
+	"github.com/crmne/hyprmoncfg/internal/prefs"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 	"github.com/crmne/hyprmoncfg/internal/profileio"
 )
@@ -265,13 +266,7 @@ func (s *Service) Preview(owner string, params ipc.PreviewParams) (ipc.Transacti
 	if err != nil {
 		return ipc.Transaction{}, err
 	}
-	timeout := time.Duration(params.TimeoutSeconds) * time.Second
-	if timeout <= 0 {
-		timeout = apply.DefaultPreviewTimeout
-	}
-	if timeout > 24*time.Hour {
-		timeout = 24 * time.Hour
-	}
+	timeout := s.previewTimeout(params)
 
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
@@ -414,6 +409,47 @@ func (s *Service) Delete(params ipc.DeleteParams) error {
 	}
 	s.signalChange()
 	return nil
+}
+
+// previewTimeout is the confirmation time for a preview: the client's own
+// duration when it sends one, as older clients do, and the saved preference
+// otherwise.
+func (s *Service) previewTimeout(params ipc.PreviewParams) time.Duration {
+	timeout := time.Duration(params.TimeoutSeconds) * time.Second
+	if timeout <= 0 {
+		timeout = s.loadPreferences().PreviewTimeout()
+	}
+	if timeout > 24*time.Hour {
+		timeout = 24 * time.Hour
+	}
+	return timeout
+}
+
+// Preferences are read from disk each time, so a change made without the
+// daemon is picked up without a restart.
+func (s *Service) Preferences() (prefs.Preferences, error) {
+	return s.loadPreferences(), nil
+}
+
+func (s *Service) SetPreferences(params prefs.Preferences) (prefs.Preferences, error) {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	saved, err := prefs.Save(s.cfg.ConfigDir, params)
+	if err != nil {
+		return prefs.Preferences{}, err
+	}
+	s.signalChange()
+	return saved, nil
+}
+
+// loadPreferences never fails a preview over a damaged file: it logs the
+// problem and uses the defaults.
+func (s *Service) loadPreferences() prefs.Preferences {
+	loaded, err := prefs.Load(s.cfg.ConfigDir)
+	if err != nil {
+		s.cfg.Logf("preferences: %v; using defaults", err)
+	}
+	return loaded
 }
 
 func (s *Service) Disconnect(owner string) {

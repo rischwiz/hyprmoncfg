@@ -448,6 +448,14 @@ Keep one backend-owned preference source with versioned defaults and typed IPC.
 Both interfaces edit it. Draft schema names must be finalized in an IPC change;
 do not publish speculative config keys as working commands.
 
+Decision (preferences store): `internal/prefs` owns a versioned
+`preferences.json` in the hyprmoncfg config directory, exposed as
+`get_preferences` and `set_preferences` and advertised by the `preferences`
+capability. The first shipped key is `preview_timeout_seconds` (15, 30, 60, 120;
+default 30). The daemon, the TUI without a daemon, and `hyprmoncfg apply` read
+it; an explicit client duration still wins. The remaining keys below are not
+shipped and their names are not final.
+
 First preferences: new-display side (right/left/above/below), alignment (center or
 edge), recommended versus explicit scale policy, mode policy, VRR default,
 preview duration, and new-setup notifications. The defaults above remain useful

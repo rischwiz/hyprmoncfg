@@ -24,6 +24,11 @@ func NewStore(baseDir string) *Store {
 	return &Store{dir: filepath.Join(baseDir, "profiles")}
 }
 
+// BaseDir is the hyprmoncfg config directory the profiles live under.
+func (s *Store) BaseDir() string {
+	return filepath.Dir(s.dir)
+}
+
 func (s *Store) Ensure() error {
 	return os.MkdirAll(s.dir, 0o755)
 }

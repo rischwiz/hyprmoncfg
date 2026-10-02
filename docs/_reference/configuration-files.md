@@ -27,6 +27,26 @@ hyprmoncfg --config-dir /path/to/profiles
 hyprmoncfgd --config-dir /path/to/profiles
 ```
 
+### Preferences
+
+`~/.config/hyprmoncfg/preferences.json` holds settings that belong to you, not
+to a profile. It is created the first time you change one; without it the
+defaults apply.
+
+```json
+{
+  "version": 1,
+  "preview_timeout_seconds": 30
+}
+```
+
+`preview_timeout_seconds` is how long a preview waits for Keep before the
+previous layout returns: 15, 30, 60, or 120. The daemon, the TUI without a
+daemon, and `hyprmoncfg apply` all read it. Change it with
+`hyprmoncfg preferences --preview-timeout <seconds>`. A file that cannot be read,
+or holds another value, is ignored with a log message and the 30-second default
+is used, so a preview always has a deadline.
+
 ### What's in a profile
 
 Each profile stores:

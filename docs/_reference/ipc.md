@@ -47,11 +47,20 @@ Errors replace `result` with an object containing a stable `code`, a human-reada
 | `save` | full `profile` | none |
 | `delete` | `name` | none |
 | `set_profile_auto` | `enabled` boolean | none |
+| `get_preferences` | none | Preferences |
+| `set_preferences` | full preferences object | Preferences as saved |
+
+Preferences are `{"version": 1, "preview_timeout_seconds": 30}`. The daemon
+validates them: `preview_timeout_seconds` must be 15, 30, 60, or 120.
+`set_preferences` replaces the whole object and broadcasts a status event. A
+daemon that supports both methods lists `preferences` in the status document's
+`capabilities`; the field is absent on older daemons, which answer with an
+unknown-method error. The protocol version is unchanged.
 
 A transaction contains an opaque `id`, the effective profile, and an RFC 3339 `deadline`.
 
-An omitted or nonpositive `timeout_seconds` uses the 30-second default. Explicit
-durations from older clients are still honored. The deadline starts after apply
+An omitted or nonpositive `timeout_seconds` uses the saved preview time, 30
+seconds unless changed. Explicit durations from older clients are still honored. The deadline starts after apply
 verification succeeds; the confirmation interval is separate from link readiness.
 
 ## Safe preview lifecycle
