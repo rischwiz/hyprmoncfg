@@ -27,8 +27,17 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Race tests
+        run: go test -race ./internal/apply ./internal/daemon ./internal/hypr ./internal/ipc ./internal/tui
+
       - name: Vet
         run: go vet ./...
+
+      - name: Staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.1 ./...
+
+      - name: Vulnerability check
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 
       - name: Build
         run: go build ./cmd/hyprmoncfg ./cmd/hyprmoncfgd

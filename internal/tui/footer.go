@@ -104,16 +104,6 @@ func (m Model) footerInfoItems(width int) []footerItem {
 	return nil
 }
 
-func (m Model) unsavedLabel() string {
-	if m.dirty && !m.draftSaved {
-		return "Changes not applied"
-	}
-	if m.dirty && m.draftSaved {
-		return "Saved Draft"
-	}
-	return "Current setup"
-}
-
 // activeProfileLabel answers "which saved profile am I looking at right now?"
 // on every tab, including when the answer is none of them.
 func (m Model) activeProfileLabel() string {

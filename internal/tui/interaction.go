@@ -223,16 +223,6 @@ func (m Model) renderModalScreen(overlay string) string {
 	return strings.Join([]string{tabs, body}, "\n")
 }
 
-func (m Model) monitorStateBadge(output editableOutput) string {
-	if !output.Enabled {
-		return m.styles.badgeOff.Render("Disabled")
-	}
-	if output.Focused {
-		return m.styles.badgeOn.Render("Focused")
-	}
-	return m.styles.badgeOn.Render("Enabled")
-}
-
 func (m Model) unsavedBadge() string {
 	if m.dirty && !m.draftSaved {
 		return m.styles.warning.Render("Changes not applied")
@@ -269,7 +259,7 @@ func (m *Model) activateInspectorField() tea.Cmd {
 		inner.SetHeight(1)
 		inner.SetSpacing(0)
 		inner.Styles.NormalTitle = m.styles.value
-		inner.Styles.SelectedTitle = m.styles.focused.Copy().UnsetPadding()
+		inner.Styles.SelectedTitle = m.styles.focused.UnsetPadding()
 		inner.Styles.DimmedTitle = m.styles.subtle
 		inner.Styles.FilterMatch = m.styles.badgeAccent
 		delegate := arrowDelegate{inner}
@@ -418,7 +408,7 @@ func (m *Model) openLabeledPicker(title string, fieldIndex int, options, labels 
 	inner.SetHeight(1)
 	inner.SetSpacing(0)
 	inner.Styles.NormalTitle = m.styles.value
-	inner.Styles.SelectedTitle = m.styles.focused.Copy().UnsetPadding()
+	inner.Styles.SelectedTitle = m.styles.focused.UnsetPadding()
 	inner.Styles.DimmedTitle = m.styles.subtle
 	inner.Styles.FilterMatch = m.styles.badgeAccent
 	delegate := arrowDelegate{inner}
@@ -675,7 +665,7 @@ func (m *Model) openSaveDialogFor(purpose saveDialogPurpose) (tea.Model, tea.Cmd
 	inner := list.NewDefaultDelegate()
 	inner.Styles.NormalTitle = m.styles.value
 	inner.Styles.NormalDesc = m.styles.subtle
-	inner.Styles.SelectedTitle = m.styles.focused.Copy().UnsetPadding()
+	inner.Styles.SelectedTitle = m.styles.focused.UnsetPadding()
 	inner.Styles.SelectedDesc = m.styles.selectedDesc
 	inner.Styles.DimmedTitle = m.styles.subtle
 	inner.Styles.DimmedDesc = m.styles.subtle
@@ -1611,10 +1601,6 @@ func (m Model) updateWorkspaceMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) bodyOriginY() int {
-	return m.bodyRect().y
-}
-
 func (m Model) appContentX() int {
 	return m.styles.app.GetPaddingLeft()
 }
@@ -1689,40 +1675,6 @@ func (m Model) workspaceSettingsLineCount() int {
 		count += itemCount
 	}
 	return count
-}
-
-func (m Model) modalOverlayRect(overlay string) hitRect {
-	if overlay == "" {
-		return hitRect{}
-	}
-
-	tabsHeight := lipgloss.Height(m.renderTabs())
-	bodyHeight := max(3, m.terminalHeight()-tabsHeight)
-	bodyWidth := m.terminalWidth() - m.styles.modalBackdrop.GetHorizontalFrameSize()
-
-	return hitRect{
-		x: m.styles.modalBackdrop.GetPaddingLeft() + max(0, (bodyWidth-lipgloss.Width(overlay))/2),
-		y: tabsHeight + m.styles.modalBackdrop.GetPaddingTop() + max(0, (bodyHeight-lipgloss.Height(overlay))/2),
-		w: lipgloss.Width(overlay),
-		h: lipgloss.Height(overlay),
-	}
-}
-
-func (m Model) modePickerListRect() hitRect {
-	if m.picker == nil {
-		return hitRect{}
-	}
-
-	overlay := m.renderModePicker()
-	modalRect := m.modalOverlayRect(overlay)
-	inner := modalRect.inner(m.styles.modal)
-	listView := m.picker.List.View()
-	return hitRect{
-		x: inner.x,
-		y: inner.y + 4,
-		w: lipgloss.Width(listView),
-		h: lipgloss.Height(listView),
-	}
 }
 
 func (m Model) modePickerItemIndexAt(x, y int) (int, bool) {
@@ -1836,11 +1788,6 @@ func (m Model) canvasLocalPoint(x, y int, canvasRect hitRect) (int, int) {
 	canvasX := inner.x
 	canvasY := inner.y
 	return x - canvasX, y - canvasY
-}
-
-func (m Model) inspectorFieldAt(y int, inspectorRect hitRect, compact bool, wasFocused bool) (int, bool) {
-	field, _, ok := m.inspectorFieldLineAt(y, inspectorRect, compact, wasFocused)
-	return field, ok
 }
 
 // inspectorFieldLineAt finds the field under a row and which of its lines
@@ -1983,10 +1930,6 @@ func (g canvasGeometry) rectAt(x, y int) (canvasRect, bool) {
 		}
 	}
 	return canvasRect{}, false
-}
-
-func modalHeight(lines int) int {
-	return lines + 4
 }
 
 func defaultHeight(height int) int {

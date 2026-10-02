@@ -720,26 +720,6 @@ func validateAppliedProfile(p profile.Profile, before []hypr.Monitor, after []hy
 	return errors.Join(problems...)
 }
 
-func logicalOutputSize(output profile.OutputConfig) (int, int) {
-	scale := scaling.Round(scaling.Default(output.Scale))
-	width := int(math.Round(float64(output.Width) / scale))
-	height := int(math.Round(float64(output.Height) / scale))
-	if output.Transform%2 == 1 {
-		width, height = height, width
-	}
-	return max(1, width), max(1, height)
-}
-
-func outputName(output profile.OutputConfig) string {
-	if strings.TrimSpace(output.Name) != "" {
-		return output.Name
-	}
-	if strings.TrimSpace(output.Key) != "" {
-		return output.Key
-	}
-	return "monitor"
-}
-
 type matchedOutput struct {
 	config  profile.OutputConfig
 	monitor hypr.Monitor

@@ -1517,11 +1517,6 @@ func (m *Model) cycleLayoutPane(delta int) {
 	m.normalizeInspectorField()
 }
 
-func (m *Model) cycleInspectorTab(delta int) {
-	m.inspectorTab = inspectorTab(wrapIndex(int(m.inspectorTab)+delta, 2))
-	m.normalizeInspectorField()
-}
-
 func inspectorScrollOffset(totalLines, selectedLine, height int) int {
 	if height <= 0 || selectedLine < height {
 		return 0
@@ -2129,16 +2124,6 @@ func (m Model) renderToast() string {
 	return style.MaxWidth(max(24, m.terminalWidth()-8)).Render(m.toast.message)
 }
 
-func (m Model) renderStatus() string {
-	if m.status == "" {
-		return ""
-	}
-	if m.statusErr {
-		return m.styles.statusError.MaxWidth(max(20, m.terminalWidth()-2)).Render(m.status)
-	}
-	return m.styles.statusOK.MaxWidth(max(20, m.terminalWidth()-2)).Render(m.status)
-}
-
 func (m Model) renderErrorStatus() string {
 	if m.status == "" || !m.statusErr {
 		return ""
@@ -2378,17 +2363,6 @@ func (m Model) hasMirroredOutputs() bool {
 	return false
 }
 
-func (m Model) mirrorSummaryLabels() []string {
-	labels := make([]string, 0)
-	for _, output := range m.editOutputs {
-		if !output.Enabled || output.MirrorOf == "" {
-			continue
-		}
-		labels = append(labels, fmt.Sprintf("%s -> %s", output.Name, m.outputNameForKey(output.MirrorOf)))
-	}
-	return labels
-}
-
 func (m Model) outputNameForKey(key string) string {
 	return outputNameForKeyIn(m.editOutputs, key)
 }
@@ -2513,10 +2487,6 @@ func (m *Model) snapSelectedOutput(direction snapDirection) tea.Cmd {
 	}
 	m.setStatusOK(fmt.Sprintf("Snapped %s %s %s", selected.Name, direction.relation(), m.editOutputs[anchorIndex].Name))
 	return m.showSnapHint(&snapHintState{Marks: marks})
-}
-
-func (m Model) nearestSnapOutput() int {
-	return profile.NearestAnchor(m.currentProfileOutputs(), m.selectedOutput)
 }
 
 func (d snapDirection) place() profile.PlaceDirection {
@@ -4093,11 +4063,6 @@ func (o editableOutput) logicalSize() (int, int) {
 	return max(1, width), max(1, height)
 }
 
-func (o editableOutput) layoutSizeLabel() string {
-	width, height := o.logicalSize()
-	return fmt.Sprintf("%d x %d", width, height)
-}
-
 const unknownModelLabel = "(unknown)"
 
 func (o editableOutput) displayModelLabel() string {
@@ -4144,8 +4109,6 @@ type cardLine struct {
 	// canvas draws as chips; text keeps the shared "1, 2, 3" form.
 	workspaces []string
 }
-
-func (o editableOutput) cardModelLabel() string { return o.modelSizeLabel() }
 
 func (o editableOutput) cardLines(maxLines int, fg string, muted string) []cardLine {
 	return o.cardLinesWithIssue(maxLines, fg, muted, "", "")
