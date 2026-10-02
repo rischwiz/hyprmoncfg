@@ -48,6 +48,15 @@ Errors replace `result` with an object containing a stable `code`, a human-reada
 | `delete` | `name` | none |
 | `set_profile_auto` | `enabled` boolean | none |
 
+Each entry of `editor_state`'s `displays` may carry `edid_color`: what that
+display's own EDID says about `hdr`, `wide_color`, `max_luminance`,
+`max_avg_luminance`, and `min_luminance` (cd/m²). A key is absent when the EDID
+does not state it, and the whole object is absent when no EDID could be read,
+its checksum is wrong, it belongs to another display, or it says nothing. An
+editor can offer to copy the present values into the draft with ordinary
+`edit_profile` operations; the daemon never applies them itself. The field is
+additive and older clients ignore it.
+
 A transaction contains an opaque `id`, the effective profile, and an RFC 3339 `deadline`.
 
 An omitted or nonpositive `timeout_seconds` uses the 30-second default. Explicit

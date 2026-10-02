@@ -317,15 +317,18 @@ type Model struct {
 	activeProfileName     string
 	draftExec             string
 	disableUnknownOutputs bool
-	daemonOK              bool
-	daemonVersion         string
-	profileOverride       string
-	fallbacks             map[string]appstatus.MonitorFallback
-	profileModePending    bool
-	refreshInFlight       bool
-	applying              bool
-	quitAfterApply        bool
-	quitAfterRevert       bool
+	// readEDIDs returns the raw EDIDs for a connector. Nil reads them from
+	// the system; tests supply their own.
+	readEDIDs          func(connector string) [][]byte
+	daemonOK           bool
+	daemonVersion      string
+	profileOverride    string
+	fallbacks          map[string]appstatus.MonitorFallback
+	profileModePending bool
+	refreshInFlight    bool
+	applying           bool
+	quitAfterApply     bool
+	quitAfterRevert    bool
 
 	width  int
 	height int

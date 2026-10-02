@@ -194,6 +194,10 @@ func (m *Model) adjustInspectorField(delta int) {
 		m.setInspectorChoice(m.inspectorField, values[clampInt(pos+delta, 0, len(values)-1)])
 		return
 	}
+	if m.inspectorField == edidDetectField {
+		// An action has no value to step through.
+		return
+	}
 	m.guardLayoutEdit(func() { m.adjustInspectorFieldUnguarded(delta) })
 }
 

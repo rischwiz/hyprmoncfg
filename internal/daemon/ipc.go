@@ -13,6 +13,7 @@ import (
 	"github.com/crmne/hyprmoncfg/internal/appstatus"
 	"github.com/crmne/hyprmoncfg/internal/buildinfo"
 	"github.com/crmne/hyprmoncfg/internal/config"
+	"github.com/crmne/hyprmoncfg/internal/edid"
 	"github.com/crmne/hyprmoncfg/internal/hypr"
 	"github.com/crmne/hyprmoncfg/internal/ipc"
 	"github.com/crmne/hyprmoncfg/internal/lid"
@@ -84,7 +85,30 @@ func (s *Service) EditorState() (appstatus.EditorDocument, error) {
 	if err != nil {
 		return appstatus.EditorDocument{}, err
 	}
-	return appstatus.BuildEditor(profiles, monitors, rules), nil
+	document := appstatus.BuildEditor(profiles, monitors, rules)
+	s.attachEDIDColor(&document, monitors)
+	return document, nil
+}
+
+// attachEDIDColor adds what each display's own EDID says about HDR and color,
+// so a graphical editor can offer the same detection as the TUI. A display
+// whose EDID cannot be read, belongs to another display, or says nothing gets
+// no entry. BuildEditor lists displays in monitor order.
+func (s *Service) attachEDIDColor(document *appstatus.EditorDocument, monitors []hypr.Monitor) {
+	if s.readEDIDs == nil {
+		return
+	}
+	for index, monitor := range monitors {
+		if index >= len(document.Displays) {
+			return
+		}
+		info, err := edid.ForMonitor(s.readEDIDs(monitor.Name), monitor.Model, monitor.Serial)
+		if err != nil || info.Color.Empty() {
+			continue
+		}
+		color := info.Color
+		document.Displays[index].EDIDColor = &color
+	}
 }
 
 // Read workspace rules between two bounded hardware reads. A dock change in

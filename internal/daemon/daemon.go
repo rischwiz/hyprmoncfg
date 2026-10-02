@@ -79,6 +79,9 @@ type Service struct {
 	lidClosed    atomic.Bool
 	lidSupported bool
 
+	// readEDIDs returns the raw EDIDs for a connector, for the editor's
+	// capability detection.
+	readEDIDs    func(connector string) [][]byte
 	readLid      func(context.Context) (lid.State, error)
 	watchLid     func(context.Context, time.Duration) (<-chan lid.State, <-chan error)
 	watchSuspend func(context.Context) <-chan bool
@@ -197,6 +200,7 @@ func New(client *hypr.Client, store *profile.Store, cfg Config) *Service {
 		cfg:          cfg,
 		fallbacks:    newDisplayFallbacks(cfg.ConfigDir, cfg.Logf),
 		lidState:     lid.Unknown,
+		readEDIDs:    hypr.ConnectorEDIDs,
 		readLid:      lid.ReadState,
 		watchLid:     lid.Watch,
 		watchSuspend: suspend.Watch,

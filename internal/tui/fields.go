@@ -73,6 +73,8 @@ func (m Model) layoutFieldValue(output editableOutput, field int) string {
 			return "None"
 		}
 		return output.ICC
+	case edidDetectField:
+		return edidDetectLabel
 	default:
 		return ""
 	}
@@ -230,6 +232,7 @@ var layoutFields = []string{
 	"WCG capability",
 	"HDR capability",
 	"ICC device profile",
+	"Capabilities from EDID",
 }
 
 const advancedFieldStart = 10
@@ -263,6 +266,8 @@ func layoutFieldShortLabel(field int) string {
 		return "HDR cap."
 	case 20:
 		return "ICC profile"
+	case edidDetectField:
+		return "From EDID"
 	case 6:
 		return "Rot"
 	case 7:

@@ -292,7 +292,8 @@ func (m Model) buildInspectorLayout(output editableOutput, innerWidth int, compa
 
 func inspectorFieldsForTab(tab inspectorTab) []int {
 	if tab == inspectorTabColor {
-		return []int{3, 4, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+		// The EDID action sits directly under the capability fields it fills.
+		return []int{3, 4, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, edidDetectField, 20}
 	}
 	return []int{0, 1, 2, 5, 6, 7, 8, 9}
 }

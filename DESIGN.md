@@ -367,6 +367,15 @@ overlap; edits that would grow a display into a neighbour are refused unless
 the layout already overlapped. The TUI drag freezes the canvas transform at the
 press and derives the position from the grab origin, validating only on drop.
 
+Decision (capabilities from EDID): editors may offer one action that fills the
+WCG/HDR capability and display luminance fields of the draft from the selected
+display's own EDID. It reads the CTA-861 HDR static metadata and colorimetry
+blocks from sysfs, rejects a wrong checksum, and refuses an EDID whose name or
+serial descriptor belongs to another display, so a connector name never stands
+in for identity. Values the EDID does not state are left unchanged and named.
+It edits the draft only. The daemon serves the same data per display as
+`edid_color`. DisplayID-only panels are not read.
+
 Brightness stays a live hardware control in the compact panel, outside the expanded
 profile editor. Use the short heading `Brightness`; show the current target as
 secondary context when more than one display is connected. Capability limits such

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/crmne/hyprmoncfg/internal/edid"
 	"github.com/crmne/hyprmoncfg/internal/hypr"
 	"github.com/crmne/hyprmoncfg/internal/profile"
 	"github.com/crmne/hyprmoncfg/internal/scaling"
@@ -177,6 +178,10 @@ type EditorDisplay struct {
 	Workspace      string    `json:"workspace,omitempty"`
 	AvailableModes []string  `json:"available_modes"`
 	ScaleOptions   []float64 `json:"scale_options"`
+	// EDIDColor is what the display's own EDID says about HDR and color, for
+	// an editor that offers to fill the capability fields from it. It is
+	// absent when no EDID could be read for this display or it says nothing.
+	EDIDColor *edid.Color `json:"edid_color,omitempty"`
 }
 
 // BuildEditor turns live Hyprland state into an editable profile without

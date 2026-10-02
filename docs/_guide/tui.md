@@ -108,6 +108,19 @@ Press `Enter` on any **Display** or **Color** field to edit it:
 
 The **Color** tab uses the same terminology as the Omarchy panel. **Color space / EOTF** combines the primaries and transfer function (for example, **BT.2020 + PQ (HDR)**). The picker shows descriptive labels but saves Hyprland's original values, such as `hdr`.
 
+**Capabilities from EDID** sits under the capability fields. **[Detect]**, or
+`Enter` on its row, reads the selected display's own EDID and fills **HDR
+capability**, **WCG capability**, **Display peak**, **Max frame-average**, and
+**Display black** in the draft, so you do not have to decode the EDID yourself.
+The top bar lists what was filled and what the EDID does not state; those fields
+are left as they were. Nothing is applied or saved until you preview and save.
+
+Detection refuses an EDID whose name or serial belongs to a different display,
+and one with a wrong checksum. It reads the CTA-861 extension, which is where
+HDMI and DisplayPort displays advertise HDR. A panel that describes itself only
+through DisplayID, as some laptop panels do, has nothing there to read, and
+Detect says so. The numbers are what the manufacturer wrote, not a measurement.
+
 **SDR luminance scale** and **SDR saturation scale** are unitless SDR-to-HDR multipliers, not physical brightness controls. An omitted or zero multiplier uses the neutral value `1`. Black, white, peak, and frame-average luminance are measured in **cd/m²**. Display luminance and WCG/HDR capability fields override display metadata; leave them at their defaults to use EDID. Narrow terminals shorten the labels without changing their meaning.
 
 ## Keep or Revert

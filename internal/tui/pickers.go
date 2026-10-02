@@ -118,6 +118,9 @@ func (m *Model) activateInspectorField() tea.Cmd {
 	case 17:
 		output := m.editOutputs[m.selectedOutput]
 		return m.openNumericInput(numericInputInt, m.selectedOutput, layoutFields[17], "Maximum frame-average luminance metadata in cd/m². Zero uses EDID.", fmt.Sprintf("%d", output.MaxAvgLuminance))
+	case edidDetectField:
+		m.detectEDIDColor()
+		return nil
 	case 20:
 		output := m.editOutputs[m.selectedOutput]
 		return m.openNumericInput(
