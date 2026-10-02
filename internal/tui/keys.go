@@ -186,6 +186,9 @@ func (m Model) updateProfileKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, m.openProfileExecInput()
+	case "m":
+		m.openProfileMenu()
+		return m, nil
 	case "n":
 		if len(m.profiles) == 0 {
 			m.setStatusErr("No profiles to rename")

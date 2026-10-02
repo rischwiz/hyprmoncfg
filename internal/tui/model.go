@@ -30,6 +30,7 @@ const (
 	modeNumericInput
 	modeProfileExecInput
 	modeProfileNameInput
+	modeProfileMenu
 	modeKeybindings
 	modeDeleteConfirm
 )
@@ -303,6 +304,7 @@ type Model struct {
 	input         *numericInputState
 	execInput     *profileExecInputState
 	nameInput     *profileNameInputState
+	profileMenu   *profileMenuState
 	// selectProfileAfterRefresh names the profile to highlight once the list
 	// has been reloaded, so a renamed or duplicated profile stays selected.
 	selectProfileAfterRefresh string
@@ -677,6 +679,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateProfileExecInputKeys(msg)
 		case modeProfileNameInput:
 			return m.updateProfileNameInputKeys(msg)
+		case modeProfileMenu:
+			return m.updateProfileMenuKeys(msg)
 		case modeKeybindings:
 			if msg.String() == "ctrl+c" {
 				return m, tea.Quit
@@ -751,6 +755,8 @@ func (m Model) View() string {
 		return m.renderModalScreen(m.renderProfileExecInput())
 	case modeProfileNameInput:
 		return m.renderModalScreen(m.renderProfileNameInput())
+	case modeProfileMenu:
+		return m.renderModalScreen(m.renderProfileMenu())
 	case modeKeybindings:
 		return m.renderModalScreen(m.renderKeybindings())
 	default:

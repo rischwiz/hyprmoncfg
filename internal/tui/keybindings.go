@@ -61,6 +61,7 @@ func (m Model) keyGroupsFor(tab mainTab) []keyGroup {
 				{"Enter, a", "Preview this profile"},
 				{"l", "Load it into the layout editor"},
 				{"e", "Edit post-apply command"},
+				{"m, right click", "Open its action menu"},
 				{"n", "Rename it"},
 				{"c", "Duplicate it without its post-apply command"},
 				{"d", "Delete it"},

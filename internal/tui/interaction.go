@@ -207,6 +207,8 @@ func (m *Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case modeProfileMenu:
+		return m.updateProfileMenuMouse(msg)
 	case modeNumericInput, modeProfileExecInput, modeProfileNameInput, modeSaveConfirm:
 		return m, nil
 	}
@@ -419,6 +421,14 @@ func (m Model) paneTitleContains(x, y int, pane hitRect, title string) bool {
 }
 
 func (m Model) updateProfilesMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	// A right click on a profile opens its action menu, as in the panel.
+	if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonRight {
+		if row, ok := m.profileRowAt(msg.X, msg.Y); ok {
+			m.selectedProfile = row
+			m.openProfileMenu()
+		}
+		return m, nil
+	}
 	if msg.Action != tea.MouseActionPress || msg.Button != tea.MouseButtonLeft {
 		return m, nil
 	}
@@ -443,13 +453,24 @@ func (m Model) updateProfilesMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	inner := listRect.inner(m.styles.activePane)
-	row := msg.Y - inner.y - profileListHeaderRows + m.profileListScroll(inner.h)
-	if row < 0 || row >= len(m.profiles) || msg.Y < inner.y+profileListHeaderRows || msg.Y >= inner.y+inner.h-m.profileListActionRows() {
-		return m, nil
+	if row, ok := m.profileRowAt(msg.X, msg.Y); ok {
+		m.selectedProfile = row
 	}
-	m.selectedProfile = row
 	return m, nil
+}
+
+// profileRowAt is the profile whose list row is under the pointer.
+func (m Model) profileRowAt(x, y int) (int, bool) {
+	listRect := m.profilesListRect()
+	if !listRect.contains(x, y) {
+		return 0, false
+	}
+	inner := listRect.inner(m.styles.activePane)
+	row := y - inner.y - profileListHeaderRows + m.profileListScroll(inner.h)
+	if row < 0 || row >= len(m.profiles) || y < inner.y+profileListHeaderRows || y >= inner.y+inner.h-m.profileListActionRows() {
+		return 0, false
+	}
+	return row, true
 }
 
 func (m Model) updateWorkspaceMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {

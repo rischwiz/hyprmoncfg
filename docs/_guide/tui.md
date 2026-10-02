@@ -159,6 +159,7 @@ Selecting a profile fills the right side: its monitor arrangement on top, its de
 | `Enter`, `a` | Preview the profile, even with automatic selection on |
 | `l` | Load the profile into the layout editor |
 | `e` | Edit the profile's post-apply command |
+| `m`, right click | Open the profile's action menu |
 | `n` | Rename the profile; type the new name and press Enter |
 | `c` | Duplicate the profile under a new name, without its post-apply command |
 | `d` | Ask to delete the profile; `y` or **[Delete profile]** confirms, Enter, Esc, or **[Cancel]** cancels |
@@ -166,10 +167,12 @@ Selecting a profile fills the right side: its monitor arrangement on top, its de
 
 **Post-apply command** is the final profile detail. Click its
 **Edit command** button or its heading to edit it; `e` provides the same operation. Selection
-uses highlighting without an extra arrow. The profile action context menu remains
-a panel-only affordance for now; the TUI has visible **Preview**, **Edit**,
-**Delete**, **Rename**, and **Duplicate** buttons acting on the highlighted
-profile, with keyboard shortcuts listed in the footer and help.
+uses highlighting without an extra arrow. The TUI has visible **Preview**,
+**Edit**, **Delete**, **Rename**, and **Duplicate** buttons acting on the
+highlighted profile, with keyboard shortcuts listed in the footer and help.
+`m`, or a right click on a profile, opens an action menu with the same
+operations plus the post-apply command: `↑` `↓` and `Enter` or a click run one,
+`Esc` closes it. Each menu entry does exactly what its button or key does.
 
 Renaming or duplicating never applies a layout or runs a post-apply command.
 A name that is already taken is refused in the dialog. A copy starts without the
