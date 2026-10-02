@@ -25,6 +25,14 @@ Running `hyprmoncfg` with no arguments opens the TUI.
 | `hyprmoncfg doctor --fix` | Add or move that include to the end of the Hyprland config |
 | `hyprmoncfg version` | Print build metadata |
 
+### Shell completion
+
+`hyprmoncfg completion bash`, `zsh`, `fish`, or `powershell` prints a completion
+script; `hyprmoncfg completion <shell> --help` says where to install it. `apply`,
+`delete`, and `save` complete saved profile names, honoring `--config-dir`.
+Completion only reads the profile directory and does not need a running
+Hyprland session. Packages do not install the scripts yet.
+
 ### Common flags
 
 | Flag | Description |

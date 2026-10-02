@@ -215,9 +215,10 @@ func newProfilesCmd(configDir *string) *cobra.Command {
 
 func newSaveCmd(configDir *string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "save <name>",
-		Short: "Save current monitor state as profile",
-		Args:  cobra.ExactArgs(1),
+		Use:               "save <name>",
+		Short:             "Save current monitor state as profile",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeProfileNames(configDir),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			client, store, err := bootstrap(*configDir)
@@ -265,9 +266,10 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 	var confirmTimeout int
 
 	cmd := &cobra.Command{
-		Use:   "apply <name>",
-		Short: "Apply a saved profile",
-		Args:  cobra.ExactArgs(1),
+		Use:               "apply <name>",
+		Short:             "Apply a saved profile",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeProfileNames(configDir),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, store, err := bootstrap(*configDir)
 			if err != nil {
@@ -364,9 +366,10 @@ func newApplyCmd(configDir *string, monitorsConf *string, hyprConfig *string) *c
 
 func newDeleteCmd(configDir *string) *cobra.Command {
 	return &cobra.Command{
-		Use:   "delete <name>",
-		Short: "Delete saved profile",
-		Args:  cobra.ExactArgs(1),
+		Use:               "delete <name>",
+		Short:             "Delete saved profile",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeProfileNames(configDir),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, store, err := bootstrap(*configDir)
 			if err != nil {
@@ -622,6 +625,33 @@ func runTUI(configDir string, monitorsConf string, hyprConfig string) error {
 		return revertErr
 	}
 	return runErr
+}
+
+// completeProfileNames offers saved profile names for shell completion. It
+// only reads: a missing profile directory is not created, and it never talks
+// to Hyprland, so completion works outside a session too.
+func completeProfileNames(configDir *string) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) > 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		base, err := config.BaseDir(*configDir)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		if _, err := os.Stat(config.ProfilesDir(base)); err != nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		profiles, err := profile.NewStore(base).List()
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		names := make([]string, 0, len(profiles))
+		for _, p := range profiles {
+			names = append(names, p.Name)
+		}
+		return names, cobra.ShellCompDirectiveNoFileComp
+	}
 }
 
 func bootstrap(explicitConfigDir string) (*hypr.Client, *profile.Store, error) {
