@@ -1,11 +1,11 @@
 <div align="center">
-<strong> This is a fork of hyprmoncfg by Carmine.</strong>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/images/logotype_dark.svg">
   <img src="docs/assets/images/logotype.svg" alt="hyprmoncfg" height="120">
 </picture>
 
+<strong> This is a fork of hyprmoncfg by Carmine.</strong><br>
 <strong>Create multi-monitor layouts for Hyprland.</strong><br>
 Arrange visually. Save each setup. Switch automatically on hotplug and lid events.
 
