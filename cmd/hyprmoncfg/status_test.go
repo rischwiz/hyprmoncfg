@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -39,5 +41,60 @@ func TestDisplayStatusExplainsASteppedDownDisplay(t *testing.T) {
 	want := "Display DP-2: kept disconnecting right after connecting at its saved settings, so it runs at 120 Hz without VRR. The saved profile is unchanged; applying a profile tries its saved settings again.\n"
 	if !strings.Contains(out.String(), want) {
 		t.Fatalf("missing %q in:\n%s", want, out.String())
+	}
+}
+
+func stubStatusDocument(t *testing.T, document appstatus.Document) {
+	t.Helper()
+	original := statusDocument
+	statusDocument = func(context.Context, string) (appstatus.Document, error) {
+		return document, nil
+	}
+	t.Cleanup(func() { statusDocument = original })
+}
+
+func TestMonitorsJSONPrintsTheStatusMonitorList(t *testing.T) {
+	stubStatusDocument(t, appstatus.Document{
+		Monitors: []appstatus.MonitorSummary{{Name: "DP-1", Enabled: true, Width: 2560, Height: 1440}},
+		Profiles: []appstatus.ProfileSummary{{Name: "desk"}},
+	})
+	dir := t.TempDir()
+	cmd := newMonitorsCmd(&dir)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("monitors --json: %v", err)
+	}
+
+	var got []appstatus.MonitorSummary
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("output is not a monitor list: %v\n%s", err, out.String())
+	}
+	if len(got) != 1 || got[0].Name != "DP-1" || got[0].Width != 2560 {
+		t.Fatalf("monitors = %+v", got)
+	}
+}
+
+func TestProfilesJSONPrintsTheStatusProfileList(t *testing.T) {
+	stubStatusDocument(t, appstatus.Document{
+		Monitors: []appstatus.MonitorSummary{{Name: "DP-1"}},
+		Profiles: []appstatus.ProfileSummary{{Name: "desk", MatchScore: 120, Active: true}},
+	})
+	dir := t.TempDir()
+	cmd := newProfilesCmd(&dir)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("profiles --json: %v", err)
+	}
+
+	var got []appstatus.ProfileSummary
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("output is not a profile list: %v\n%s", err, out.String())
+	}
+	if len(got) != 1 || got[0].Name != "desk" || got[0].MatchScore != 120 || !got[0].Active {
+		t.Fatalf("profiles = %+v", got)
 	}
 }

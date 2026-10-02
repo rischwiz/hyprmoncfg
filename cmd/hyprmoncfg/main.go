@@ -79,37 +79,12 @@ func newStatusCmd(configDir *string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 			defer cancel()
-			document, remote, err := daemonStatus(ctx)
+			document, err := statusDocument(ctx, *configDir)
 			if err != nil {
 				return err
 			}
-			if !remote {
-				client, store, err := bootstrap(*configDir)
-				if err != nil {
-					return err
-				}
-				profiles, err := store.List()
-				if err != nil {
-					return err
-				}
-				monitors, err := client.Monitors(ctx)
-				if err != nil {
-					return err
-				}
-				rules, err := client.WorkspaceRules(ctx)
-				if err != nil {
-					return err
-				}
-				var opts profile.MatchOptions
-				if state, err := lid.ReadState(ctx); err == nil {
-					opts.LidClosed = state == lid.Closed
-				}
-				document = appstatus.Build(buildinfo.Version, false, profiles, monitors, rules, opts)
-			}
 			if jsonOutput {
-				encoder := json.NewEncoder(cmd.OutOrStdout())
-				encoder.SetIndent("", "  ")
-				return encoder.Encode(document)
+				return writeJSON(cmd.OutOrStdout(), document)
 			}
 
 			activeProfile := "custom layout"
@@ -141,6 +116,55 @@ func newStatusCmd(configDir *string) *cobra.Command {
 	return cmd
 }
 
+// statusDocument is the status the daemon reports, or the same document built
+// directly from Hyprland when no daemon is running. It is a variable so tests
+// can supply a document without a compositor.
+var statusDocument = func(ctx context.Context, configDir string) (appstatus.Document, error) {
+	document, remote, err := daemonStatus(ctx)
+	if err != nil || remote {
+		return document, err
+	}
+	client, store, err := bootstrap(configDir)
+	if err != nil {
+		return appstatus.Document{}, err
+	}
+	profiles, err := store.List()
+	if err != nil {
+		return appstatus.Document{}, err
+	}
+	monitors, err := client.Monitors(ctx)
+	if err != nil {
+		return appstatus.Document{}, err
+	}
+	rules, err := client.WorkspaceRules(ctx)
+	if err != nil {
+		return appstatus.Document{}, err
+	}
+	var opts profile.MatchOptions
+	if state, err := lid.ReadState(ctx); err == nil {
+		opts.LidClosed = state == lid.Closed
+	}
+	return appstatus.Build(buildinfo.Version, false, profiles, monitors, rules, opts), nil
+}
+
+func writeJSON(w io.Writer, value any) error {
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(value)
+}
+
+// writeStatusJSON prints one list from the status document, so `monitors
+// --json` and `profiles --json` share the schema of `status --json`.
+func writeStatusJSON(cmd *cobra.Command, configDir string, pick func(appstatus.Document) any) error {
+	ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
+	defer cancel()
+	document, err := statusDocument(ctx, configDir)
+	if err != nil {
+		return err
+	}
+	return writeJSON(cmd.OutOrStdout(), pick(document))
+}
+
 func newTUICmd(configDir *string, monitorsConf *string, hyprConfig *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tui",
@@ -152,10 +176,17 @@ func newTUICmd(configDir *string, monitorsConf *string, hyprConfig *string) *cob
 }
 
 func newMonitorsCmd(configDir *string) *cobra.Command {
-	return &cobra.Command{
+	var jsonOutput bool
+
+	cmd := &cobra.Command{
 		Use:   "monitors",
 		Short: "List current monitors from Hyprland",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if jsonOutput {
+				return writeStatusJSON(cmd, *configDir, func(document appstatus.Document) any {
+					return document.Monitors
+				})
+			}
 			client, _, err := bootstrap(*configDir)
 			if err != nil {
 				return err
@@ -184,13 +215,22 @@ func newMonitorsCmd(configDir *string) *cobra.Command {
 			return w.Flush()
 		},
 	}
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Print the monitors list of the status schema as JSON")
+	return cmd
 }
 
 func newProfilesCmd(configDir *string) *cobra.Command {
-	return &cobra.Command{
+	var jsonOutput bool
+
+	cmd := &cobra.Command{
 		Use:   "profiles",
 		Short: "List saved profiles",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if jsonOutput {
+				return writeStatusJSON(cmd, *configDir, func(document appstatus.Document) any {
+					return document.Profiles
+				})
+			}
 			_, store, err := bootstrap(*configDir)
 			if err != nil {
 				return err
@@ -211,6 +251,8 @@ func newProfilesCmd(configDir *string) *cobra.Command {
 			return w.Flush()
 		},
 	}
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Print the profiles list of the status schema as JSON")
+	return cmd
 }
 
 func newSaveCmd(configDir *string) *cobra.Command {
